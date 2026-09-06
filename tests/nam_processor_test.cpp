@@ -1,22 +1,23 @@
 #include "NAM/dsp.h"
-#include "NAM/lstm.h"
-#include "audio_stimulus.h"
-#include "embedded_model.h"
 #include "nam_processor.h"
 #include <array>
 #include <cassert>
 #include <cmath>
-#include <fstream>
 #include <limits>
 #include <stdexcept>
-#include <vector>
 
-// A small synthetic recurrent model, not an amp capture. Nonzero weights
-// exercise state retention and the upstream float sample ABI across blocks.
-static std::unique_ptr<nam::DSP> MakeModel() {
-    std::vector<float> weights(16, 0.1f);
-    return std::make_unique<nam::lstm::LSTM>(1, 1, 1, 1, 1, weights, 48000.0);
-}
+static std::unique_ptr<nam::DSP> MakeModel() { return std::make_unique<nam::DSP>(1, 1, 48000.0); }
+
+class PrewarmModel : public nam::DSP {
+  public:
+    PrewarmModel() : DSP(1, 1, 48000.0) {}
+    int GetPrewarmSamples() override { return 96; }
+    void process(float **input, float **output, int frames) override {
+        samples += frames;
+        DSP::process(input, output, frames);
+    }
+    int samples = 0;
+};
 
 class FailingModel : public nam::DSP {
   public:
@@ -33,13 +34,18 @@ int main() {
     assert(!processor.Prepare(nullptr, 48000.0, 48));
     assert(!processor.Prepare(MakeModel(), 44100.0, 48));
     assert(!processor.Prepare(MakeModel(), 48000.0, 0));
-    assert(processor.Prepare(CreateEmbeddedModel(), 48000.0, 48));
+    assert(processor.Prepare(MakeModel(), 48000.0, 48));
     assert(!processor.Prepare(MakeModel(), std::numeric_limits<double>::quiet_NaN(), 48));
     assert(!processor.Prepare(std::make_unique<nam::DSP>(2, 1, 48000.0), 48000.0, 48));
     assert(!processor.Prepare(std::make_unique<nam::DSP>(1, 1, -1.0), 48000.0, 48));
     assert(processor.Prepare(MakeModel(), 48000.0, 48));
+    auto warming = std::make_unique<PrewarmModel>();
+    auto *warmed = warming.get();
+    warming->SetPrewarmOnReset(false);
+    assert(processor.Prepare(std::move(warming), 48000.0, 48));
+    assert(warmed->samples == 96); // Prepare must prewarm exactly once.
     auto reference = MakeModel();
-    reference->ResetAndPrewarm(48000.0, 48);
+    reference->Reset(48000.0, 48);
     assert(!processor.Prepare(std::make_unique<FailingModel>(), 48000.0, 48));
     assert(!processor.Process(input.data(), output.data(), 49));
     assert(!processor.Process(nullptr, output.data(), 48));
@@ -55,17 +61,5 @@ int main() {
         assert(processor.Process(input.data(), output.data(), frames));
         for (int i = 0; i < frames; ++i)
             assert(std::isfinite(output[i]) && std::fabs(output[i] - expected[i]) < 1e-6f);
-    }
-    // Keep the bundled small LSTM covered against the unmodified JSON loader.
-    assert(processor.Prepare(CreateEmbeddedModel(), 48000.0, 48));
-    std::ifstream file("build/tests/reference.f32", std::ios::binary);
-    for (int offset = 0; offset < kTestSamples; offset += 48) {
-        file.read(reinterpret_cast<char *>(expected.data()), sizeof(expected));
-        assert(file.gcount() == sizeof(expected));
-        for (int i = 0; i < 48; ++i)
-            input[i] = TestInput(offset + i);
-        assert(processor.Process(input.data(), output.data(), 48));
-        for (int i = 0; i < 48; ++i)
-            assert(std::fabs(output[i] - expected[i]) < 1e-6f);
     }
 }

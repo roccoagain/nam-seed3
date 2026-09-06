@@ -1,5 +1,5 @@
 // A2-Lite equations and weight ordering follow NeuralAmpModelerCore's WaveNet.
-// See patches/NAM-LICENSE for the upstream MIT notice.
+// See NAM-LICENSE for the upstream MIT notice.
 #include "a2_lite.h"
 #include <algorithm>
 

@@ -13,5 +13,3 @@ author permission to redistribute the models or firmware containing their weight
 `scripts/convert_a2.py` validates the supported 48 kHz architecture and packs
 all three models into `build/generated/embedded_a2_data.h`. Make regenerates
 that header when an input model or the converter changes, or the header is missing.
-
-The bundled LSTM regression fixture and its license live in `tests/fixtures/`.

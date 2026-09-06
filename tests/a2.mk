@@ -1,4 +1,4 @@
-A2_DIR = libs/NeuralAmpModelerCoreA2
+A2_DIR = $(NAM_DIR)
 A2_NAMES = fender-twin65-a2-lite vox-ac30-chimey-a2-lite marshall-jcm800-g5-a2-lite
 A2_FILES = $(addprefix models/local/,$(addsuffix .nam,$(A2_NAMES)))
 A2_FLAGS = -std=c++20 -O1 -g -DNAM_SAMPLE_FLOAT -fsanitize=address,undefined -fno-omit-frame-pointer

@@ -3,8 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 root="$PWD"
 daisy_commit=cc146d5065dd8286078a662e2830bf820c37a612
-nam_commit=20a04fcf466dc4233730412b120e5bbad72402c3
-a2_reference_commit=2563c0fd4cb1f9ce457d89a761738ea15097e1f3
+nam_commit=2563c0fd4cb1f9ce457d89a761738ea15097e1f3
 
 command -v brew >/dev/null || {
     echo 'Install Homebrew first: https://brew.sh' >&2
@@ -45,17 +44,6 @@ if [[ $(git -C "$root/libs/NeuralAmpModelerCore" rev-parse HEAD) != "$nam_commit
 fi
 git -C "$root/libs/NeuralAmpModelerCore" submodule update --init --recursive
 
-# Host-only reference engine for the A2 accuracy tests. Firmware uses the
-# fixed A2-Lite implementation and the existing NAM DSP interface.
-if [[ ! -d "$root/libs/NeuralAmpModelerCoreA2" ]]; then
-    git clone --no-checkout https://github.com/sdatkinson/NeuralAmpModelerCore.git "$root/libs/NeuralAmpModelerCoreA2"
-    git -C "$root/libs/NeuralAmpModelerCoreA2" checkout --detach "$a2_reference_commit"
-fi
-if [[ $(git -C "$root/libs/NeuralAmpModelerCoreA2" rev-parse HEAD) != "$a2_reference_commit" ]]; then
-    echo "libs/NeuralAmpModelerCoreA2 differs from pinned revision $a2_reference_commit; leaving it untouched." >&2
-    exit 1
-fi
-git -C "$root/libs/NeuralAmpModelerCoreA2" submodule update --init --recursive
 arm-none-eabi-g++ --version
 dfu-util --version
 echo 'Dependencies ready. Run bash scripts/download_models.sh, then make build.'

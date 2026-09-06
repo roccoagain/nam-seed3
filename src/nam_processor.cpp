@@ -22,7 +22,8 @@ bool NamProcessor::Prepare(std::unique_ptr<nam::DSP> model, double sample_rate, 
         return false;
 
     try {
-        model->ResetAndPrewarm(sample_rate, static_cast<int>(max_block_size));
+        model->SetPrewarmOnReset(true);
+        model->Reset(sample_rate, static_cast<int>(max_block_size));
     } catch (...) {
         return false;
     }

@@ -72,16 +72,19 @@ Host tests require a C++20 compiler.
 | `scripts/` | Setup, download, conversion, and serial-monitor tools. |
 | `models/local/` | Downloaded amp captures; Git-ignored. |
 | `tests/` | Host tests and upstream reference comparisons. |
-| `tests/support/` | Test-only LSTM construction and activation support. |
-| `tests/fixtures/` | Bundled LSTM test model, provenance, and license. |
-| `patches/` | NAM adaptation patch and upstream license notice. |
 | `libs/` | Installed, pinned dependencies; Git-ignored. |
-| `build/` | Generated headers, patched source copies, binaries, and test output; Git-ignored. |
+| `build/` | Generated headers, binaries, and test output; Git-ignored. |
 
 `convert_a2.py` embeds the three amp captures for firmware and host tests.
-`convert_lstm.py` embeds the small LSTM fixture for host tests only. Both run
-automatically when their generated headers are missing or their inputs change.
-`make model` prepares only the A2 data. Neither converter trains a model.
+It runs automatically when its generated header is missing or its inputs change.
+`make model` prepares the A2 data. The converter does not train a model.
+
+Firmware and host reference tests share one pinned NAM Core checkout in
+`libs/NeuralAmpModelerCore`. Firmware uses its DSP interface with our fixed
+A2-Lite engine; host tests use upstream WaveNet to check the engine's output.
+The firmware build copies `dsp.cpp` into `build/nam/` and changes its thread-local
+prewarm default to static storage because the bare-metal runtime has no TLS.
+Model creation and preparation occur before audio processing on the main thread.
 
 Run Make commands from the repository root. `make clean` removes build output;
 downloaded models and installed dependencies remain available. The generated

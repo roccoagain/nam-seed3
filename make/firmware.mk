@@ -1,6 +1,6 @@
 TARGET = passthrough
 NAM_DIR = libs/NeuralAmpModelerCore
-NAM_SOURCES = src/a2_lite.cpp $(NAM_DIR)/NAM/dsp.cpp
+NAM_SOURCES = src/a2_lite.cpp build/nam/dsp.cpp
 CPP_SOURCES = src/main.cpp src/nam_processor.cpp src/nam_audio.cpp src/amp_models.cpp $(NAM_SOURCES)
 C_INCLUDES = -Ibuild/generated -I$(NAM_DIR) -I$(NAM_DIR)/NAM -I$(NAM_DIR)/Dependencies/eigen -I$(NAM_DIR)/Dependencies/nlohmann
 C_DEFS = -DNAM_SAMPLE_FLOAT
@@ -33,3 +33,12 @@ compile-objects: $(OBJECTS) $(NAM_OBJECTS)
 $(OBJECTS) $(NAM_OBJECTS): make/firmware.mk
 $(BUILD_DIR)/amp_models.o: $(A2_HEADER)
 $(BUILD_DIR)/$(TARGET).elf: make/firmware.mk $(LIBDAISY_DIR)/build/libdaisy.a $(NAM_LIBRARY)
+
+# The bare-metal runtime has no TLS. Model creation occurs on the main thread;
+# keep upstream untouched and use a process-wide prewarm default in firmware.
+build/nam/dsp.cpp: $(NAM_DIR)/NAM/dsp.cpp make/firmware.mk
+	@mkdir -p $(@D)
+	sed 's/^thread_local bool gPrewarmOnResetDefault/static bool gPrewarmOnResetDefault/' $< > $@
+
+$(BUILD_DIR)/dsp.o: build/nam/dsp.cpp | $(BUILD_DIR)
+	$(CXX) -c $(CPPFLAGS) $(CPP_STANDARD) $< -o $@
