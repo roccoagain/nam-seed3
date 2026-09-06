@@ -1,5 +1,6 @@
 #include "nam_audio.h"
-#include "NAM/dsp.h"
+// The temporary unique_ptr returned by CreateAmpModel needs a complete DSP type.
+#include "NAM/dsp.h" // IWYU pragma: keep
 #include <algorithm>
 #include <cmath>
 
