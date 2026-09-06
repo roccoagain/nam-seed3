@@ -144,7 +144,9 @@ Run `make install` again when updating an existing workspace.
 `NAM_SAMPLE_FLOAT`, and `NAM_USE_INLINE_GEMM`. Exceptions are enabled because
 upstream configuration/initialization code throws. Only the LSTM inference
 sources are compiled for this model. Fast-math and approximate activations are
-not enabled. Setup code uses `-Os`, while LSTM inference uses `-O2`.
+not enabled. Application code, NAM inference, and libDaisy use GCC's `-Os`
+optimization for code size. Run `make clean` before rebuilding after changing
+optimization flags so cached dependency objects are rebuilt too.
 The small [LSTM adaptation](patches/README.md) removes per-sample Eigen
 temporaries and unused desktop registries; it is applied to copies under `build/`.
 
@@ -167,8 +169,8 @@ Tests use AddressSanitizer and UndefinedBehaviorSanitizer, requiring a host C++1
 compiler (Apple Command Line Tools suffice) and Python 3.
 
 `BOOT_NONE` and the existing upload procedure are retained. With ARM GCC
-15.3.rel1, this build uses about 130,440 of 131,072 internal-flash bytes; there
-is little room for additional code or models. Recheck the link map after any
+15.3.rel1 and `-Os` throughout, this build uses 107,980 of 131,072 internal-flash
+bytes (82.38%), leaving 23,092 bytes free. Recheck the link map after any
 change. Target callback timing, physical latency, audio quality, and dropout
 behavior have not been validated on hardware.
 

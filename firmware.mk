@@ -5,7 +5,7 @@ CPP_SOURCES = src/main.cpp src/nam_processor.cpp src/nam_audio.cpp src/embedded_
 C_INCLUDES = -Ibuild/nam -Ibuild/generated -I$(NAM_DIR) -I$(NAM_DIR)/NAM -I$(NAM_DIR)/Dependencies/eigen -I$(NAM_DIR)/Dependencies/nlohmann
 C_DEFS = -DNAM_SAMPLE_FLOAT -DNAM_USE_INLINE_GEMM -DNAM_EMBEDDED_LSTM_ONLY
 CPP_STANDARD = -std=gnu++17
-# Keep initialization code compact; preserve speed optimization in inference.
+# Optimize application and NAM code for size.
 OPT = -Os
 LIBDAISY_DIR = libs/libDaisy
 SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core
@@ -31,7 +31,6 @@ $(NAM_LIBRARY): $(NAM_OBJECTS)
 compile-objects: $(OBJECTS) $(NAM_OBJECTS)
 
 $(OBJECTS) $(NAM_OBJECTS): firmware.mk
-$(BUILD_DIR)/lstm.o: CFLAGS += -O2
 $(BUILD_DIR)/lstm.o: $(NAM_LSTM_SOURCE) $(NAM_LSTM_HEADER)
 $(BUILD_DIR)/embedded_model.o: $(MODEL_HEADER) $(NAM_LSTM_HEADER)
 $(BUILD_DIR)/$(TARGET).elf: firmware.mk $(LIBDAISY_DIR)/build/libdaisy.a $(NAM_LIBRARY)

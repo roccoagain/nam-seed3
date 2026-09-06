@@ -9,7 +9,7 @@ build:
 	@command -v arm-none-eabi-g++ >/dev/null || { echo 'Missing ARM compiler; run make install.'; exit 1; }
 	@test -f libs/libDaisy/core/Makefile || { echo 'Run make install first.'; exit 1; }
 	@test -f libs/NeuralAmpModelerCore/Dependencies/eigen/Eigen/Core || { echo 'Missing NAM dependencies; run make install.'; exit 1; }
-	$(MAKE) -C libs/libDaisy -j$(JOBS)
+	$(MAKE) -C libs/libDaisy -j$(JOBS) OPT=-Os
 	$(MAKE) -f firmware.mk all
 
 upload: build
