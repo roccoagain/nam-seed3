@@ -31,6 +31,9 @@ $(NAM_LIBRARY): $(NAM_OBJECTS)
 compile-objects: $(OBJECTS) $(NAM_OBJECTS)
 
 $(OBJECTS) $(NAM_OBJECTS): firmware.mk
-$(BUILD_DIR)/lstm.o: $(NAM_LSTM_SOURCE) $(NAM_LSTM_HEADER)
+# Bypass libDaisy's vpath lookup, which can select the unpatched upstream
+# lstm.cpp before the generated source exists on a clean build.
+$(BUILD_DIR)/lstm.o: $(NAM_LSTM_SOURCE) $(NAM_LSTM_HEADER) | $(BUILD_DIR)
+	$(CXX) -c $(CPPFLAGS) $(CPP_STANDARD) -Wa,-a,-ad,-alms=$(BUILD_DIR)/lstm.lst $(NAM_LSTM_SOURCE) -o $@
 $(BUILD_DIR)/embedded_model.o: $(MODEL_HEADER) $(NAM_LSTM_HEADER)
 $(BUILD_DIR)/$(TARGET).elf: firmware.mk $(LIBDAISY_DIR)/build/libdaisy.a $(NAM_LIBRARY)
