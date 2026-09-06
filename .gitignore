@@ -1,5 +1,7 @@
 /libs/
 /build/
+# TONE3000 captures permit local use, not redistribution without permission.
+/models/local/
 /compile_commands.json
 /.cache/clangd/
 .DS_Store
