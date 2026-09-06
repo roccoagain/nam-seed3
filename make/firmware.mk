@@ -15,7 +15,7 @@ include $(SYSTEM_FILES_DIR)/Makefile
 # NAM uses exceptions for configuration errors. Keep IEEE floating-point
 # behavior until model accuracy and target performance have been measured.
 CPPFLAGS += -fexceptions
-include model.mk
+include make/models.mk
 
 # Archive the selected inference sources separately from application code.
 NAM_OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(NAM_SOURCES:.cpp=.o)))
@@ -30,6 +30,6 @@ $(NAM_LIBRARY): $(NAM_OBJECTS)
 .PHONY: compile-objects
 compile-objects: $(OBJECTS) $(NAM_OBJECTS)
 
-$(OBJECTS) $(NAM_OBJECTS): firmware.mk
+$(OBJECTS) $(NAM_OBJECTS): make/firmware.mk
 $(BUILD_DIR)/amp_models.o: $(A2_HEADER)
-$(BUILD_DIR)/$(TARGET).elf: firmware.mk $(LIBDAISY_DIR)/build/libdaisy.a $(NAM_LIBRARY)
+$(BUILD_DIR)/$(TARGET).elf: make/firmware.mk $(LIBDAISY_DIR)/build/libdaisy.a $(NAM_LIBRARY)

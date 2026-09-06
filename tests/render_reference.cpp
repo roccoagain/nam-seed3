@@ -5,7 +5,7 @@
 
 int main() {
   // Deliberately use the unmodified upstream JSON loader and LSTM source.
-  auto model = nam::get_dsp(std::filesystem::path("models/test_lstm.nam"));
+  auto model = nam::get_dsp(std::filesystem::path("tests/fixtures/test_lstm.nam"));
   model->ResetAndPrewarm(48000.0, 48);
   std::ofstream file("build/tests/reference.f32", std::ios::binary);
   std::array<float, 48> input{}, output{};

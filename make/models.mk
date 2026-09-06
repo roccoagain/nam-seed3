@@ -12,8 +12,8 @@ $(A2_MODELS):
 $(A2_HEADER): $(A2_MODELS) scripts/convert_a2.py
 	python3 scripts/convert_a2.py $@
 
-$(MODEL_HEADER): models/test_lstm.nam scripts/convert_model.py
-	python3 scripts/convert_model.py $< $@
+$(MODEL_HEADER): tests/fixtures/test_lstm.nam scripts/convert_lstm.py
+	python3 scripts/convert_lstm.py $< $@
 
 build/nam/.prepared: patches/nam-lstm.patch $(NAM_DIR)/NAM/lstm.cpp $(NAM_DIR)/NAM/lstm.h
 	@mkdir -p build/nam/NAM

@@ -5,22 +5,22 @@ from pathlib import Path
 import tempfile
 import unittest
 
-spec = importlib.util.spec_from_file_location("convert_model", "scripts/convert_model.py")
+spec = importlib.util.spec_from_file_location("convert_lstm", "scripts/convert_lstm.py")
 converter = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(converter)
 
 
-class ConvertModelTest(unittest.TestCase):
+class ConvertLstmTest(unittest.TestCase):
     def test_source_checksum(self):
-        self.assertEqual(hashlib.sha256(Path("models/test_lstm.nam").read_bytes()).hexdigest(),
+        self.assertEqual(hashlib.sha256(Path("tests/fixtures/test_lstm.nam").read_bytes()).hexdigest(),
                          "df9f78c49f49c2bb32411df47e3f53746075adb206b92d017e06379d1e56234a")
 
     def test_reproducible(self):
-        self.assertEqual(converter.convert("models/test_lstm.nam"),
+        self.assertEqual(converter.convert("tests/fixtures/test_lstm.nam"),
                          Path("build/generated/embedded_model_data.h").read_text())
 
     def test_rejects_unsupported_and_corrupt_models(self):
-        original = json.loads(Path("models/test_lstm.nam").read_text())
+        original = json.loads(Path("tests/fixtures/test_lstm.nam").read_text())
         cases = [("version", "9.0.0"), ("architecture", "WaveNet"),
                  ("sample_rate", 44100), ("weights", [0.0]),
                  ("weights", [float("nan")] * 70)]

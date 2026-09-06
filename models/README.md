@@ -1,34 +1,17 @@
-# Bundled test model
+# Amp models
 
-`test_lstm.nam` is an unchanged copy of `example_models/lstm.nam` from
-[NeuralAmpModelerCore at 20a04fc](https://github.com/sdatkinson/NeuralAmpModelerCore/tree/20a04fcf466dc4233730412b120e5bbad72402c3).
-The upstream repository distributes this file under its MIT license, copied
-verbatim to `LICENSE` in this directory. Keep that notice with redistributions,
-including the generated model data.
+`local/` holds the three downloaded A2-Lite captures used by the firmware:
 
-- SHA-256: `df9f78c49f49c2bb32411df47e3f53746075adb206b92d017e06379d1e56234a`
-- NAM format: `0.5.4`
-- Architecture: mono LSTM, one layer, three hidden units, 70 weights (280 bytes as float32).
-- Sample rate: 48,000 Hz.
-- Upstream metadata: name `Test LSTM`, modeled by `Steve`, clean
-  Darkglass Electronics Microtubes 900 v2.
+- `fender-twin65-a2-lite.nam`
+- `vox-ac30-chimey-a2-lite.nam`
+- `marshall-jcm800-g5-a2-lite.nam`
 
-This small upstream example is retained for host regression tests.
-Firmware uses the three downloaded A2-Lite amps under Git-ignored `local/`;
-see the main README and `scripts/download_models.sh`.
-Its metadata does not provide a validation ESR; no capture-quality claim is made.
-It is quiet relative to bypass. Firmware uses unity input gain and 0.8 output
-gain, with no automatic loudness normalization or dBu calibration. The metadata's
-input/output levels remain in the source model for future calibration work.
+Run `bash scripts/download_models.sh` from the repository root to obtain them.
+These files are Git-ignored. Their T3K licenses permit local use but require
+author permission to redistribute the models or firmware containing their weights.
 
-The host test build converts this source to `build/generated/embedded_model_data.h`.
-The converter rounds weights to float32 and writes exact hexadecimal literals;
-the generated header records the source checksum. The host test constructs the
-upstream LSTM directly from that data, without JSON parsing or file access.
+`scripts/convert_a2.py` validates the supported 48 kHz architecture and packs
+all three models into `build/generated/embedded_a2_data.h`. Make regenerates
+that header when an input model or the converter changes, or the header is missing.
 
-The current converter accepts only NAM 0.5.4/0.6.0, mono, single-layer 48 kHz
-LSTMs with 1–8 hidden units. It rejects other configurations, invalid weight
-counts, and nonfinite/out-of-range weights. This support range is a format
-restriction, not a guarantee of real-time performance for every accepted model.
-Replacing the bundled model requires updating this provenance and license record
-and validating the new model on the target.
+The bundled LSTM regression fixture and its license live in `tests/fixtures/`.

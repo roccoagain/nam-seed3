@@ -61,8 +61,31 @@ Exit the monitor with **Ctrl-A**, then **K**, then **Y**.
 | `make help` | List commands. |
 
 Formatting and clangd setup require `brew install clang-format compiledb`.
-Host tests require a C++20 compiler. Application code lives in `src/`, helpers
-in `scripts/`, and host tests in `tests/`.
+Host tests require a C++20 compiler.
+
+## Repository layout
+
+| Path | Contents |
+| --- | --- |
+| `src/` | Firmware, audio processing, and the A2-Lite engine. |
+| `make/` | Firmware build and model-generation rules. |
+| `scripts/` | Setup, download, conversion, and serial-monitor tools. |
+| `models/local/` | Downloaded amp captures; Git-ignored. |
+| `tests/` | Host tests and upstream reference comparisons. |
+| `tests/support/` | Test-only LSTM construction and activation support. |
+| `tests/fixtures/` | Bundled LSTM test model, provenance, and license. |
+| `patches/` | NAM adaptation patch and upstream license notice. |
+| `libs/` | Installed, pinned dependencies; Git-ignored. |
+| `build/` | Generated headers, patched source copies, binaries, and test output; Git-ignored. |
+
+`convert_a2.py` embeds the three amp captures for firmware and host tests.
+`convert_lstm.py` embeds the small LSTM fixture for host tests only. Both run
+automatically when their generated headers are missing or their inputs change.
+`make model` prepares only the A2 data. Neither converter trains a model.
+
+Run Make commands from the repository root. `make clean` removes build output;
+downloaded models and installed dependencies remain available. The generated
+`compile_commands.json` at the root is for clangd; refresh it with `make compiledb`.
 
 All three models fit in internal flash. Real-time performance and audio quality
 still need hardware validation; the serial log reports callback timing and overruns.

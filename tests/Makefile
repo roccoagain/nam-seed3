@@ -1,13 +1,13 @@
 # Run from the repository root with make test.
 .DEFAULT_GOAL := test
 NAM_DIR = libs/NeuralAmpModelerCore
-include model.mk
+include make/models.mk
 TEST_BIN = build/tests/nam_processor_test
-SOURCES = tests/nam_processor_test.cpp src/nam_processor.cpp src/embedded_model.cpp \
-  $(NAM_DIR)/NAM/dsp.cpp src/nam_lstm_activations.cpp $(NAM_LSTM_SOURCE)
+SOURCES = tests/nam_processor_test.cpp src/nam_processor.cpp tests/support/embedded_model.cpp \
+  $(NAM_DIR)/NAM/dsp.cpp tests/support/nam_lstm_activations.cpp $(NAM_LSTM_SOURCE)
 FLAGS = -std=c++17 -O1 -g -DNAM_SAMPLE_FLOAT -DNAM_USE_INLINE_GEMM \
   -fsanitize=address,undefined -fno-omit-frame-pointer
-INCLUDES = -Isrc -I$(NAM_DIR) -I$(NAM_DIR)/NAM \
+INCLUDES = -Isrc -Itests/support -I$(NAM_DIR) -I$(NAM_DIR)/NAM \
   -I$(NAM_DIR)/Dependencies/eigen -I$(NAM_DIR)/Dependencies/nlohmann
 EMBEDDED_FLAGS = -Ibuild/nam -Ibuild/generated -DNAM_EMBEDDED_LSTM_ONLY \
   -DEIGEN_RUNTIME_NO_MALLOC
@@ -18,10 +18,10 @@ include tests/a2.mk
 test: $(TEST_BIN) build/tests/nam_audio_test build/tests/reference.f32 test-a2 $(MODEL_HEADER)
 	./$(TEST_BIN)
 	./build/tests/nam_audio_test
-	python3 -B tests/test_convert_model.py
+	python3 -B tests/test_convert_lstm.py
 	python3 -B tests/test_convert_a2.py
 
-$(TEST_BIN): $(SOURCES) src/nam_processor.h src/embedded_model.h tests/audio_stimulus.h tests/Makefile $(MODEL_HEADER) $(NAM_LSTM_HEADER) $(wildcard $(NAM_DIR)/NAM/*.h)
+$(TEST_BIN): $(SOURCES) src/nam_processor.h tests/support/embedded_model.h tests/audio_stimulus.h tests/Makefile $(MODEL_HEADER) $(NAM_LSTM_HEADER) $(wildcard $(NAM_DIR)/NAM/*.h)
 	@mkdir -p $(@D)
 	$(CXX) $(FLAGS) $(EMBEDDED_FLAGS) $(INCLUDES) $(SOURCES) -o $@
 
@@ -38,5 +38,5 @@ build/tests/render_reference: $(REFERENCE_SOURCES) tests/audio_stimulus.h tests/
 	@mkdir -p $(@D)
 	$(CXX) $(FLAGS) $(INCLUDES) $(REFERENCE_SOURCES) -o $@
 
-build/tests/reference.f32: build/tests/render_reference models/test_lstm.nam
+build/tests/reference.f32: build/tests/render_reference tests/fixtures/test_lstm.nam
 	./build/tests/render_reference
