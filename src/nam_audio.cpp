@@ -1,6 +1,5 @@
 #include "nam_audio.h"
 #include "NAM/dsp.h"
-#include "embedded_model.h"
 #include <algorithm>
 #include <cmath>
 
@@ -12,10 +11,10 @@ float OutputSample(float sample) {
 }
 } // namespace
 
-bool NamAudio::Init() {
+bool NamAudio::Init(AmpId amp) {
   ready_ = false;
   try {
-    ready_ = processor_.Prepare(CreateEmbeddedModel(), kSampleRate, kBlockSize);
+    ready_ = processor_.Prepare(CreateAmpModel(amp), kSampleRate, kBlockSize);
   } catch (...) {
     // Allocation/construction failure must not prevent audio startup.
   }

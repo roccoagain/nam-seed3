@@ -1,9 +1,12 @@
 #include "NAM/dsp.h"
 #include "NAM/lstm.h"
 #include "nam_processor.h"
+#include "embedded_model.h"
+#include "audio_stimulus.h"
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <fstream>
 #include <limits>
 #include <stdexcept>
 #include <vector>
@@ -30,6 +33,7 @@ int main() {
   assert(!processor.Prepare(nullptr, 48000.0, 48));
   assert(!processor.Prepare(MakeModel(), 44100.0, 48));
   assert(!processor.Prepare(MakeModel(), 48000.0, 0));
+  assert(processor.Prepare(CreateEmbeddedModel(), 48000.0, 48));
   assert(!processor.Prepare(MakeModel(),
                             std::numeric_limits<double>::quiet_NaN(), 48));
   assert(!processor.Prepare(std::make_unique<nam::DSP>(2, 1, 48000.0), 48000.0,
@@ -55,5 +59,16 @@ int main() {
     for (int i = 0; i < frames; ++i)
       assert(std::isfinite(output[i]) &&
              std::fabs(output[i] - expected[i]) < 1e-6f);
+  }
+  // Keep the bundled small LSTM covered against the unmodified JSON loader.
+  assert(processor.Prepare(CreateEmbeddedModel(), 48000.0, 48));
+  std::ifstream file("build/tests/reference.f32", std::ios::binary);
+  for (int offset = 0; offset < kTestSamples; offset += 48) {
+    file.read(reinterpret_cast<char *>(expected.data()), sizeof(expected));
+    assert(file.gcount() == sizeof(expected));
+    for (int i = 0; i < 48; ++i) input[i] = TestInput(offset + i);
+    assert(processor.Process(input.data(), output.data(), 48));
+    for (int i = 0; i < 48; ++i)
+      assert(std::fabs(output[i] - expected[i]) < 1e-6f);
   }
 }

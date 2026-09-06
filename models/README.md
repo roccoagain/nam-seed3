@@ -1,4 +1,4 @@
-# Bundled model
+# Bundled test model
 
 `test_lstm.nam` is an unchanged copy of `example_models/lstm.nam` from
 [NeuralAmpModelerCore at 20a04fc](https://github.com/sdatkinson/NeuralAmpModelerCore/tree/20a04fcf466dc4233730412b120e5bbad72402c3).
@@ -13,15 +13,17 @@ including the generated model data.
 - Upstream metadata: name `Test LSTM`, modeled by `Steve`, clean
   Darkglass Electronics Microtubes 900 v2.
 
-This small upstream example is for integration and performance experiments.
+This small upstream example is retained for host regression tests.
+Firmware uses the three downloaded A2-Lite amps under Git-ignored `local/`;
+see the main README and `scripts/download_models.sh`.
 Its metadata does not provide a validation ESR; no capture-quality claim is made.
 It is quiet relative to bypass. Firmware uses unity input gain and 0.8 output
 gain, with no automatic loudness normalization or dBu calibration. The metadata's
 input/output levels remain in the source model for future calibration work.
 
-`make model` converts this source to `build/generated/embedded_model_data.h`.
+The host test build converts this source to `build/generated/embedded_model_data.h`.
 The converter rounds weights to float32 and writes exact hexadecimal literals;
-the generated header records the source checksum. The firmware constructs the
+the generated header records the source checksum. The host test constructs the
 upstream LSTM directly from that data, without JSON parsing or file access.
 
 The current converter accepts only NAM 0.5.4/0.6.0, mono, single-layer 48 kHz

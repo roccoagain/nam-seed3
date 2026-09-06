@@ -25,7 +25,7 @@ test:
 	$(MAKE) -f tests/Makefile test
 
 model:
-	$(MAKE) -f firmware.mk build/generated/embedded_model_data.h build/nam/.prepared
+	$(MAKE) -f firmware.mk build/generated/embedded_a2_data.h
 
 compiledb: model
 	@command -v compiledb >/dev/null || { echo 'Missing compiledb; install it with brew install compiledb.'; exit 1; }
@@ -44,9 +44,9 @@ clean:
 
 help:
 	@echo 'make install  Install Homebrew compiler/uploader and fetch pinned dependencies.'
-	@echo 'make build    Build libDaisy, NAM Core, and mono NAM firmware.'
-	@echo 'make model    Convert the bundled model to embedded float data.'
-	@echo 'make test     Run host NAM wrapper tests with address/undefined sanitizers.'
+	@echo 'make build    Build libDaisy and three-amp A2-Lite firmware.'
+	@echo 'make model    Convert the downloaded A2-Lite models to embedded float data.'
+	@echo 'make test     Run upstream A2 comparisons and sanitized host audio tests.'
 	@echo 'make upload   Build and flash via USB; enter BOOT + RESET mode first.'
 	@echo 'make monitor  Open USB serial in screen (optional PORT=/dev/cu.usbmodem...).'
 	@echo 'make format   Format C/C++ files under src/ using .clang-format.'

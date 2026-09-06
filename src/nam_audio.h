@@ -1,5 +1,6 @@
 #pragma once
 
+#include "amp_models.h"
 #include "nam_processor.h"
 #include <array>
 #include <cstddef>
@@ -11,8 +12,8 @@ public:
   static constexpr float kInputGain = 1.0f;
   static constexpr float kOutputGain = 0.8f;
 
-  // Startup only, before audio begins. Failure leaves the path in bypass.
-  bool Init();
+  // Call with audio stopped. Failure leaves the path in bypass.
+  bool Init(AmpId amp = AmpId::Fender);
   // Left input to both outputs. Bypass still advances model state to allow
   // meaningful comparisons. Buffers must contain at least frames samples.
   void Process(const float *left, float *out_left, float *out_right,

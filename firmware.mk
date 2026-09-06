@@ -1,9 +1,9 @@
 TARGET = passthrough
 NAM_DIR = libs/NeuralAmpModelerCore
-NAM_SOURCES = src/nam_lstm_activations.cpp $(NAM_DIR)/NAM/dsp.cpp build/nam/NAM/lstm.cpp
-CPP_SOURCES = src/main.cpp src/nam_processor.cpp src/nam_audio.cpp src/embedded_model.cpp $(NAM_SOURCES)
-C_INCLUDES = -Ibuild/nam -Ibuild/generated -I$(NAM_DIR) -I$(NAM_DIR)/NAM -I$(NAM_DIR)/Dependencies/eigen -I$(NAM_DIR)/Dependencies/nlohmann
-C_DEFS = -DNAM_SAMPLE_FLOAT -DNAM_USE_INLINE_GEMM -DNAM_EMBEDDED_LSTM_ONLY
+NAM_SOURCES = src/a2_lite.cpp $(NAM_DIR)/NAM/dsp.cpp
+CPP_SOURCES = src/main.cpp src/nam_processor.cpp src/nam_audio.cpp src/amp_models.cpp $(NAM_SOURCES)
+C_INCLUDES = -Ibuild/generated -I$(NAM_DIR) -I$(NAM_DIR)/NAM -I$(NAM_DIR)/Dependencies/eigen -I$(NAM_DIR)/Dependencies/nlohmann
+C_DEFS = -DNAM_SAMPLE_FLOAT
 CPP_STANDARD = -std=gnu++17
 # Optimize application and NAM code for size.
 OPT = -Os
@@ -31,9 +31,5 @@ $(NAM_LIBRARY): $(NAM_OBJECTS)
 compile-objects: $(OBJECTS) $(NAM_OBJECTS)
 
 $(OBJECTS) $(NAM_OBJECTS): firmware.mk
-# Bypass libDaisy's vpath lookup, which can select the unpatched upstream
-# lstm.cpp before the generated source exists on a clean build.
-$(BUILD_DIR)/lstm.o: $(NAM_LSTM_SOURCE) $(NAM_LSTM_HEADER) | $(BUILD_DIR)
-	$(CXX) -c $(CPPFLAGS) $(CPP_STANDARD) -Wa,-a,-ad,-alms=$(BUILD_DIR)/lstm.lst $(NAM_LSTM_SOURCE) -o $@
-$(BUILD_DIR)/embedded_model.o: $(MODEL_HEADER) $(NAM_LSTM_HEADER)
+$(BUILD_DIR)/amp_models.o: $(A2_HEADER)
 $(BUILD_DIR)/$(TARGET).elf: firmware.mk $(LIBDAISY_DIR)/build/libdaisy.a $(NAM_LIBRARY)
