@@ -12,14 +12,21 @@ NamProcessor::NamProcessor() = default;
 NamProcessor::~NamProcessor() = default;
 
 bool NamProcessor::Prepare(std::unique_ptr<nam::DSP> model, double sample_rate, std::size_t max_block_size) {
-    if (!model || !std::isfinite(sample_rate) || sample_rate <= 0.0 || max_block_size == 0 || max_block_size > static_cast<std::size_t>(std::numeric_limits<int>::max()) || model->NumInputChannels() != 1 || model->NumOutputChannels() != 1 || model->GetExpectedSampleRate() != sample_rate) {
+    if (!model || !std::isfinite(sample_rate) || sample_rate <= 0.0)
         return false;
-    }
+    if (max_block_size == 0 || max_block_size > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+        return false;
+    if (model->NumInputChannels() != 1 || model->NumOutputChannels() != 1)
+        return false;
+    if (model->GetExpectedSampleRate() != sample_rate)
+        return false;
+
     try {
         model->ResetAndPrewarm(sample_rate, static_cast<int>(max_block_size));
     } catch (...) {
         return false;
     }
+    // Commit the replacement only after prewarming succeeds.
     model_ = std::move(model);
     max_block_size_ = max_block_size;
     return true;

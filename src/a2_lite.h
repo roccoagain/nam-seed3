@@ -26,7 +26,11 @@ class A2Lite final : public nam::DSP {
         int dilation;
     };
     int PrewarmSamples() override { return 6347; }
+
+    static void ProcessLayer(Layer &layer, float input, float *features, float *skip_sum);
+    float ProcessHead(const float *skip_sum);
     float Sample(float input);
+
     const float *weights_;
     const float *head_;
     std::array<Layer, 23> layers_;

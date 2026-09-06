@@ -14,11 +14,14 @@ class NamAudio {
 
     // Call with audio stopped. Failure leaves the path in bypass.
     bool Init(AmpId amp = AmpId::Fender);
+
     // Left input to both outputs. Bypass still advances model state to allow
     // meaningful comparisons. Buffers must contain at least frames samples.
     void Process(const float *left, float *out_left, float *out_right, std::size_t frames, bool bypass);
 
   private:
+    bool ProcessModel(const float *input, std::size_t frames);
+
     NamProcessor processor_;
     bool ready_ = false;
     std::array<float, kBlockSize> input_{};

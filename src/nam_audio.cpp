@@ -22,15 +22,20 @@ bool NamAudio::Init(AmpId amp) {
 }
 
 void NamAudio::Process(const float *left, float *out_left, float *out_right, std::size_t frames, bool bypass) {
-    bool processed = false;
-    if (ready_ && frames <= kBlockSize) {
-        for (std::size_t i = 0; i < frames; ++i)
-            input_[i] = std::isfinite(left[i]) ? left[i] * kInputGain : 0.0f;
-        processed = processor_.Process(input_.data(), output_.data(), frames);
-    }
+    const bool processed = ProcessModel(left, frames);
+    const float *source = processed && !bypass ? output_.data() : left;
     for (std::size_t i = 0; i < frames; ++i) {
-        const float sample = OutputSample(processed && !bypass ? output_[i] : left[i]);
+        const float sample = OutputSample(source[i]);
         out_left[i] = sample;
         out_right[i] = sample;
     }
+}
+
+bool NamAudio::ProcessModel(const float *input, std::size_t frames) {
+    if (!ready_ || frames > kBlockSize)
+        return false;
+
+    for (std::size_t i = 0; i < frames; ++i)
+        input_[i] = std::isfinite(input[i]) ? input[i] * kInputGain : 0.0f;
+    return processor_.Process(input_.data(), output_.data(), frames);
 }

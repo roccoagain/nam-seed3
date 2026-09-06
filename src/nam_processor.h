@@ -13,6 +13,7 @@ class NamProcessor {
   public:
     NamProcessor();
     ~NamProcessor();
+
     NamProcessor(const NamProcessor &) = delete;
     NamProcessor &operator=(const NamProcessor &) = delete;
 
