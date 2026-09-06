@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := build
 JOBS ?= 4
 
-.PHONY: install build upload program-dfu clean help
+.PHONY: install build upload program-dfu monitor clean help
 install:
 	bash scripts/install.sh
 
@@ -17,6 +17,9 @@ upload: build
 
 program-dfu: upload
 
+monitor:
+	@bash scripts/monitor.sh "$(PORT)"
+
 clean:
 	rm -rf build
 	@if test -f libs/libDaisy/Makefile; then $(MAKE) -C libs/libDaisy clean; fi
@@ -25,4 +28,5 @@ help:
 	@echo 'make install  Install Homebrew compiler/uploader and fetch pinned libDaisy.'
 	@echo 'make build    Build libDaisy and 48 kHz passthrough firmware.'
 	@echo 'make upload   Build and flash via USB; enter BOOT + RESET mode first.'
+	@echo 'make monitor  Open USB serial in screen (optional PORT=/dev/cu.usbmodem...).'
 	@echo 'make clean    Remove firmware and libDaisy build outputs.'

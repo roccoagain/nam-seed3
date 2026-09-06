@@ -41,6 +41,26 @@ at `0x08000000`, replacing the current firmware. No separate Daisy bootloader
 or ST-Link is required for this small application. If needed, press RESET after
 upload. USB DFU enumeration alone does not validate the audio path.
 
+## USB serial diagnostics
+
+Firmware enables libDaisy USB CDC logging on the USB-C port without waiting
+for a terminal. After flashing/resetting (outside DFU mode), run in your terminal:
+
+```sh
+make monitor
+```
+
+This opens the single `/dev/cu.usbmodem*` device in `screen` at 115200.
+If multiple ports exist, it lists them instead of guessing; select one with
+`make monitor PORT=/dev/cu.usbmodemYOUR_PORT`. Exit screen with Ctrl-A,
+then K, then Y. A serial monitor such as Arduino's also works.
+The startup message may appear before you connect, so a status line repeats
+about once per second with uptime, sample rate, block size, and the number
+of audio callbacks since the previous report (normally around 1000).
+The onboard LED toggles each report. Logging happens only in the main loop.
+This verifies firmware activity and audio callback execution without a carrier;
+it does not verify analog input/output quality. Unconnected audio inputs may float.
+
 Output: `build/passthrough.bin` (also `.elf`, `.hex`, and linker map).
 `make clean` removes application and libDaisy build outputs, retaining library source and Homebrew tools.
 `make JOBS=8` changes libDaisy build concurrency.
