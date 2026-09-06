@@ -34,6 +34,7 @@ brew install clang-format compiledb
 | --- | --- |
 | `make install` | Install build/upload tools and fetch pinned dependencies. |
 | `make` or `make build` | Build libDaisy, NAM Core, and firmware incrementally. |
+| `make model` | Generate embedded model data and prepare the LSTM adaptation. |
 | `make test` | Run host NAM processor tests with address/undefined sanitizers. |
 | `make upload` | Build and upload firmware over USB DFU. |
 | `make program-dfu` | Alias for `make upload`. |
@@ -91,16 +92,46 @@ Workspace settings let clangd query Homebrew's ARM compiler for standard headers
 ## Layout
 
 - `src/`: application source.
+- `models/`: bundled source model, license, and provenance.
+- `patches/`: reviewed embedded adaptations applied to generated dependency copies.
 - `libs/`: downloaded dependencies, excluded from Git.
 - `build/`: generated firmware and debugging files, excluded from Git.
 - `scripts/`: dependency installation and serial monitor helpers.
 - `tests/`: host tests for the NAM processor boundary.
 - `Makefile`: developer commands.
 - `firmware.mk`: application configuration using libDaisy's build rules.
+- `model.mk`: shared model/source generation rules for firmware and host tests.
 
 The generated compilation database and clangd cache are also excluded from Git.
 
-## NAM integration foundation
+## NAM audio
+
+Firmware processes the left input through the bundled `Test LSTM` model and
+duplicates the result to both outputs. The right input is unused. Processing
+runs at 48 kHz with 48-sample blocks, unity input gain, and 0.8 output gain.
+Output is clamped to [-1, 1]; nonfinite input/output samples are silenced.
+The model is an upstream integration example, not a finished amp preset;
+see [model provenance and license](models/README.md).
+
+Model construction, allocation, and prewarming happen before audio starts.
+If initialization fails, the firmware starts in clean left-input bypass and
+reports `model=failed`. USB logging never waits for a computer connection.
+To compare with clean audio, set `kBypass = true` in `src/main.cpp` and rebuild.
+Bypass uses the same output gain and continues advancing a successfully loaded
+model's state. Gain constants are in `src/nam_audio.h`.
+
+`make build` automatically converts the checked-in `.nam` file into a generated
+C++ header containing float32 weights. No SD card, download, or file parser is
+needed at startup. To invoke the converter directly:
+
+```sh
+python3 scripts/convert_model.py models/test_lstm.nam build/generated/embedded_model_data.h
+```
+
+The converter deliberately supports only small, mono, single-layer 48 kHz LSTMs.
+See `models/README.md` for exact limits; arbitrary `.nam` models are not supported.
+
+## NAM build and validation
 
 The build compiles [NeuralAmpModelerCore](https://github.com/sdatkinson/NeuralAmpModelerCore)
 at `20a04fcf466dc4233730412b120e5bbad72402c3`, the revision used by the
@@ -111,10 +142,11 @@ Run `make install` again when updating an existing workspace.
 
 `firmware.mk` builds the engine into `build/libnam.a` using C++17,
 `NAM_SAMPLE_FLOAT`, and `NAM_USE_INLINE_GEMM`. Exceptions are enabled because
-upstream configuration/initialization code throws. Fast-math and approximate
-activations are not enabled. The archive allows unused model families to stay
-out of the linked application. Future JSON registry-based loading must explicitly
-link the required model family objects so their static registrations are retained.
+upstream configuration/initialization code throws. Only the LSTM inference
+sources are compiled for this model. Fast-math and approximate activations are
+not enabled. Setup code uses `-Os`, while LSTM inference uses `-O2`.
+The small [LSTM adaptation](patches/README.md) removes per-sample Eigen
+temporaries and unused desktop registries; it is applied to copies under `build/`.
 
 `src/nam_processor.h` provides `NamProcessor`, which owns an already constructed
 `nam::DSP`. With audio stopped, call `Prepare(model, sample_rate, max_block_size)`
@@ -126,15 +158,19 @@ writing output. The wrapper makes no processing allocations; each actual model
 still needs allocation and timing validation. Preparation, destruction, and
 processing must not run concurrently. Processing exceptions are not caught.
 
-The host test uses a synthetic recurrent model to compare wrapper output with
-direct upstream processing across multiple block sizes, and checks invalid
-configuration and failed preparation. It needs a host C++17 compiler with
-AddressSanitizer and UndefinedBehaviorSanitizer (Apple Command Line Tools suffice).
+`make test` checks conversion/rejection behavior, invalid preparation, bypass,
+stereo duplication, output bounds, and recurrent state across block sizes.
+A separate unmodified upstream executable loads the source JSON and generates
+reference output for silence, an impulse, a step, and multitone input. The embedded
+path is compared against it with Eigen allocations forbidden after initialization.
+Tests use AddressSanitizer and UndefinedBehaviorSanitizer, requiring a host C++17
+compiler (Apple Command Line Tools suffice) and Python 3.
 
-This is the engine integration only: the firmware still runs stereo soft clipping.
-No amp model, model-file loader, or NAM audio routing is enabled yet. `BOOT_NONE`
-is retained; the linked size with a real model and the on-board real-time budget
-remain to be measured before choosing a different memory/boot arrangement.
+`BOOT_NONE` and the existing upload procedure are retained. With ARM GCC
+15.3.rel1, this build uses about 130,440 of 131,072 internal-flash bytes; there
+is little room for additional code or models. Recheck the link map after any
+change. Target callback timing, physical latency, audio quality, and dropout
+behavior have not been validated on hardware.
 
 ## Hardware reference
 

@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := build
 JOBS ?= 4
 
-.PHONY: install build upload program-dfu monitor format compiledb test clean help
+.PHONY: install build model upload program-dfu monitor format compiledb test clean help
 install:
 	bash scripts/install.sh
 
@@ -24,12 +24,15 @@ monitor:
 test:
 	$(MAKE) -f tests/Makefile test
 
-compiledb:
+model:
+	$(MAKE) -f firmware.mk build/generated/embedded_model_data.h build/nam/.prepared
+
+compiledb: model
 	@command -v compiledb >/dev/null || { echo 'Missing compiledb; install it with brew install compiledb.'; exit 1; }
 	@command -v arm-none-eabi-g++ >/dev/null || { echo 'Missing ARM compiler; run make install.'; exit 1; }
 	@test -f libs/libDaisy/core/Makefile || { echo 'Run make install first.'; exit 1; }
 	@test -f libs/NeuralAmpModelerCore/Dependencies/eigen/Eigen/Core || { echo 'Missing NAM dependencies; run make install.'; exit 1; }
-	compiledb -n make -B -f firmware.mk compile-objects GCC_PATH="$$(dirname "$$(command -v arm-none-eabi-g++)")"
+	compiledb -n -f make -B -f firmware.mk compile-objects GCC_PATH="$$(dirname "$$(command -v arm-none-eabi-g++)")"
 
 format:
 	@command -v clang-format >/dev/null || { echo 'Missing clang-format; install it with brew install clang-format.'; exit 1; }
@@ -41,7 +44,8 @@ clean:
 
 help:
 	@echo 'make install  Install Homebrew compiler/uploader and fetch pinned dependencies.'
-	@echo 'make build    Build libDaisy, NAM Core, and soft-clip firmware.'
+	@echo 'make build    Build libDaisy, NAM Core, and mono NAM firmware.'
+	@echo 'make model    Convert the bundled model to embedded float data.'
 	@echo 'make test     Run host NAM wrapper tests with address/undefined sanitizers.'
 	@echo 'make upload   Build and flash via USB; enter BOOT + RESET mode first.'
 	@echo 'make monitor  Open USB serial in screen (optional PORT=/dev/cu.usbmodem...).'

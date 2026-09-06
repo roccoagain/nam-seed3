@@ -1,6 +1,6 @@
 #include "daisy_seed.h"
+#include "nam_audio.h"
 #include <atomic>
-#include <cmath>
 #include <cstdint>
 
 daisy::DaisySeed seed;
@@ -8,31 +8,28 @@ daisy::DaisySeed seed;
 static std::atomic<uint32_t> audio_callbacks{0};
 static_assert(ATOMIC_INT_LOCK_FREE == 2, "Audio counter must be lock-free");
 
-// Increase drive for more saturation; output gain controls the final level.
-constexpr float kDrive = 3.0f;
-constexpr float kOutputGain = 0.8f;
-
-float SoftClip(float input) {
-  const float driven = kDrive * input;
-  return kOutputGain * driven / (1.0f + std::fabs(driven));
-}
+static NamAudio audio;
+// Set true and rebuild for a clean left-input comparison at the same output
+// gain.
+constexpr bool kBypass = false;
 
 void AudioCallback(daisy::AudioHandle::InputBuffer in,
                    daisy::AudioHandle::OutputBuffer out, size_t size) {
-  for (size_t i = 0; i < size; ++i) {
-    out[0][i] = SoftClip(in[0][i]);
-    out[1][i] = SoftClip(in[1][i]);
-  }
+  audio.Process(in[0], out[0], out[1], size, kBypass);
   audio_callbacks.fetch_add(1, std::memory_order_relaxed);
 }
 
 int main() {
   seed.Init();
   seed.SetAudioSampleRate(daisy::SaiHandle::Config::SampleRate::SAI_48KHZ);
-  seed.SetAudioBlockSize(48);
+  seed.SetAudioBlockSize(NamAudio::kBlockSize);
   seed.StartLog(false); // USB CDC serial; never wait for a laptop connection.
+  const bool model_ready = audio.Init();
   seed.StartAudio(AudioCallback);
-  seed.PrintLine("Seed3 soft clip started: drive=3.0 output_gain=0.8");
+  seed.PrintLine(
+      "Seed3 NAM Test LSTM: model=%s bypass=%u input_gain=1 output_gain=0.8",
+      model_ready ? "ready" : "failed",
+      static_cast<unsigned>(kBypass || !model_ready));
   uint32_t previous_callbacks = 0;
   bool led_on = false;
   while (true) {
@@ -44,11 +41,13 @@ int main() {
     seed.SetLed(led_on);
     // Repeat configuration so opening the terminal after boot is useful.
     // Print only from the main loop, never from the audio callback.
-    seed.PrintLine(
-        "Seed3 soft clip: uptime_ms=%lu sr=%lu block=%lu callbacks=%lu",
-        static_cast<unsigned long>(daisy::System::GetNow()),
-        static_cast<unsigned long>(seed.AudioSampleRate()),
-        static_cast<unsigned long>(seed.AudioBlockSize()),
-        static_cast<unsigned long>(delta));
+    seed.PrintLine("Seed3 NAM: model=%s bypass=%u uptime_ms=%lu sr=%lu "
+                   "block=%lu callbacks=%lu",
+                   model_ready ? "ready" : "failed",
+                   static_cast<unsigned>(kBypass || !model_ready),
+                   static_cast<unsigned long>(daisy::System::GetNow()),
+                   static_cast<unsigned long>(seed.AudioSampleRate()),
+                   static_cast<unsigned long>(seed.AudioBlockSize()),
+                   static_cast<unsigned long>(delta));
   }
 }
