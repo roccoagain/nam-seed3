@@ -27,6 +27,25 @@ project-local toolchain. Only libDaisy is kept under `libs/libDaisy/`.
 Plain `make` builds libDaisy first, then the application, incrementally.
 After changing compiler versions, run `make clean` before rebuilding.
 
+## VS Code / clangd
+
+Install the database generator once, then generate the editor build information:
+
+```sh
+brew install compiledb
+make compiledb
+```
+
+This writes `compile_commands.json` at the project root using a Make dry run.
+It records the current compiler path and firmware flags without compiling.
+The generated file is ignored by Git. Regenerate it after changing source files,
+build flags, or compiler versions. The workspace settings allow clangd to query
+Homebrew's ARM compiler for its standard-library headers on Apple Silicon or Intel.
+Open this project root in VS Code and run **clangd: Restart language server**
+after the initial setup.
+The `.clangd` file removes a GCC-only optimization flag from editor analysis;
+the actual firmware compiler flags remain unchanged.
+
 ## Upload
 
 Connect a USB-C **data** cable. Hold BOOT, press and release RESET, then release

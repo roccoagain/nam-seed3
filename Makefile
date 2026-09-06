@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := build
 JOBS ?= 4
 
-.PHONY: install build upload program-dfu monitor format clean help
+.PHONY: install build upload program-dfu monitor format compiledb clean help
 install:
 	bash scripts/install.sh
 
@@ -20,6 +20,12 @@ program-dfu: upload
 monitor:
 	@bash scripts/monitor.sh "$(PORT)"
 
+compiledb:
+	@command -v compiledb >/dev/null || { echo 'Missing compiledb; install it with brew install compiledb.'; exit 1; }
+	@command -v arm-none-eabi-g++ >/dev/null || { echo 'Missing ARM compiler; run make install.'; exit 1; }
+	@test -f libs/libDaisy/core/Makefile || { echo 'Run make install first.'; exit 1; }
+	compiledb -n make -B -f firmware.mk compile-objects GCC_PATH="$$(dirname "$$(command -v arm-none-eabi-g++)")"
+
 format:
 	@command -v clang-format >/dev/null || { echo 'Missing clang-format; install it with brew install clang-format.'; exit 1; }
 	find src -type f \( -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -exec clang-format -i --style=file {} +
@@ -34,4 +40,5 @@ help:
 	@echo 'make upload   Build and flash via USB; enter BOOT + RESET mode first.'
 	@echo 'make monitor  Open USB serial in screen (optional PORT=/dev/cu.usbmodem...).'
 	@echo 'make format   Format C/C++ files under src/ using .clang-format.'
+	@echo 'make compiledb Generate compile_commands.json for clangd without building.'
 	@echo 'make clean    Remove firmware and libDaisy build outputs.'
