@@ -1,10 +1,4 @@
 TARGET = passthrough
-LOGGING ?= 0
-ifneq ($(LOGGING),0)
-ifneq ($(LOGGING),1)
-$(error LOGGING must be 0 or 1)
-endif
-endif
 NAM_DIR = libs/NeuralAmpModelerCore
 NAM_SOURCES = src/nam_lstm_activations.cpp $(NAM_DIR)/NAM/dsp.cpp build/nam/NAM/lstm.cpp
 CPP_SOURCES = src/main.cpp src/nam_processor.cpp src/nam_audio.cpp src/embedded_model.cpp $(NAM_SOURCES)
@@ -37,12 +31,6 @@ $(NAM_LIBRARY): $(NAM_OBJECTS)
 compile-objects: $(OBJECTS) $(NAM_OBJECTS)
 
 $(OBJECTS) $(NAM_OBJECTS): firmware.mk
-# Switching either way must rebuild main, even without make clean.
-$(BUILD_DIR)/logging-$(LOGGING): | $(BUILD_DIR)
-	rm -f $(BUILD_DIR)/logging-0 $(BUILD_DIR)/logging-1
-	touch $@
-$(BUILD_DIR)/main.o: CFLAGS += -DNAM_ENABLE_LOGGING=$(LOGGING)
-$(BUILD_DIR)/main.o: $(BUILD_DIR)/logging-$(LOGGING)
 $(BUILD_DIR)/lstm.o: $(NAM_LSTM_SOURCE) $(NAM_LSTM_HEADER)
 $(BUILD_DIR)/embedded_model.o: $(MODEL_HEADER) $(NAM_LSTM_HEADER)
 $(BUILD_DIR)/$(TARGET).elf: firmware.mk $(LIBDAISY_DIR)/build/libdaisy.a $(NAM_LIBRARY)
