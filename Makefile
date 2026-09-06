@@ -45,6 +45,7 @@ clean:
 help:
 	@echo 'make install  Install Homebrew compiler/uploader and fetch pinned dependencies.'
 	@echo 'make build    Build libDaisy, NAM Core, and mono NAM firmware.'
+	@echo '              LOGGING=1 enables debug USB logging; default LOGGING=0.'
 	@echo 'make model    Convert the bundled model to embedded float data.'
 	@echo 'make test     Run host NAM wrapper tests with address/undefined sanitizers.'
 	@echo 'make upload   Build and flash via USB; enter BOOT + RESET mode first.'

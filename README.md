@@ -48,6 +48,27 @@ Use `make JOBS=8` to change libDaisy build concurrency (default: 4).
 
 ## Upload and monitor
 
+USB logging is disabled by default. Enable it for debugging with `LOGGING=1`:
+
+```sh
+make build LOGGING=1
+make upload LOGGING=1
+```
+
+Plain `make build` and `make upload` disable logging (equivalent to `LOGGING=0`).
+Pass `LOGGING=1` to upload as well as build when debugging, since upload builds first.
+Switching automatically rebuilds the affected source; no clean is needed.
+Both variants use the same output paths under `build/`; the last build replaces
+the previous firmware image.
+`make compiledb LOGGING=1` configures clangd for the debug logging variant;
+plain `make compiledb` uses the default without logging.
+The `LOGGING` option accepts only `0` or `1`.
+
+With logging disabled, USB logging initialization, print calls, and the audio
+callback diagnostic counter are compiled out. NAM initialization, audio
+processing, fallback bypass, and the blinking LED remain active. `make monitor`
+will have no firmware log output in this configuration.
+
 Connect the Seed3 using a USB-C **data** cable. Hold **BOOT**, press and release
 **RESET**, then release **BOOT** to enter DFU mode. With only the intended DFU
 device connected, run:
@@ -115,7 +136,8 @@ see [model provenance and license](models/README.md).
 
 Model construction, allocation, and prewarming happen before audio starts.
 If initialization fails, the firmware starts in clean left-input bypass and
-reports `model=failed`. USB logging never waits for a computer connection.
+reports `model=failed` when debug logging is enabled. USB logging never waits
+for a computer connection.
 To compare with clean audio, set `kBypass = true` in `src/main.cpp` and rebuild.
 Bypass uses the same output gain and continues advancing a successfully loaded
 model's state. Gain constants are in `src/nam_audio.h`.
@@ -169,8 +191,9 @@ Tests use AddressSanitizer and UndefinedBehaviorSanitizer, requiring a host C++1
 compiler (Apple Command Line Tools suffice) and Python 3.
 
 `BOOT_NONE` and the existing upload procedure are retained. With ARM GCC
-15.3.rel1 and `-Os` throughout, this build uses 107,980 of 131,072 internal-flash
-bytes (82.38%), leaving 23,092 bytes free. Recheck the link map after any
+15.3.rel1 and `-Os` throughout, the default build uses 102,180 of 131,072
+internal-flash bytes (77.96%). `LOGGING=1` uses 108,920 bytes (83.10%), adding
+6,740 bytes. Recheck the link map after any
 change. Target callback timing, physical latency, audio quality, and dropout
 behavior have not been validated on hardware.
 
