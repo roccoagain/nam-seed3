@@ -1,13 +1,14 @@
 .DEFAULT_GOAL := build
 JOBS ?= 4
 
-.PHONY: install build upload program-dfu monitor format compiledb clean help
+.PHONY: install build upload program-dfu monitor format compiledb test clean help
 install:
 	bash scripts/install.sh
 
 build:
 	@command -v arm-none-eabi-g++ >/dev/null || { echo 'Missing ARM compiler; run make install.'; exit 1; }
 	@test -f libs/libDaisy/core/Makefile || { echo 'Run make install first.'; exit 1; }
+	@test -f libs/NeuralAmpModelerCore/Dependencies/eigen/Eigen/Core || { echo 'Missing NAM dependencies; run make install.'; exit 1; }
 	$(MAKE) -C libs/libDaisy -j$(JOBS)
 	$(MAKE) -f firmware.mk all
 
@@ -20,10 +21,14 @@ program-dfu: upload
 monitor:
 	@bash scripts/monitor.sh "$(PORT)"
 
+test:
+	$(MAKE) -f tests/Makefile test
+
 compiledb:
 	@command -v compiledb >/dev/null || { echo 'Missing compiledb; install it with brew install compiledb.'; exit 1; }
 	@command -v arm-none-eabi-g++ >/dev/null || { echo 'Missing ARM compiler; run make install.'; exit 1; }
 	@test -f libs/libDaisy/core/Makefile || { echo 'Run make install first.'; exit 1; }
+	@test -f libs/NeuralAmpModelerCore/Dependencies/eigen/Eigen/Core || { echo 'Missing NAM dependencies; run make install.'; exit 1; }
 	compiledb -n make -B -f firmware.mk compile-objects GCC_PATH="$$(dirname "$$(command -v arm-none-eabi-g++)")"
 
 format:
@@ -35,8 +40,9 @@ clean:
 	@if test -f libs/libDaisy/Makefile; then $(MAKE) -C libs/libDaisy clean; fi
 
 help:
-	@echo 'make install  Install Homebrew compiler/uploader and fetch pinned libDaisy.'
-	@echo 'make build    Build libDaisy and 48 kHz passthrough firmware.'
+	@echo 'make install  Install Homebrew compiler/uploader and fetch pinned dependencies.'
+	@echo 'make build    Build libDaisy, NAM Core, and soft-clip firmware.'
+	@echo 'make test     Run host NAM wrapper tests with address/undefined sanitizers.'
 	@echo 'make upload   Build and flash via USB; enter BOOT + RESET mode first.'
 	@echo 'make monitor  Open USB serial in screen (optional PORT=/dev/cu.usbmodem...).'
 	@echo 'make format   Format C/C++ files under src/ using .clang-format.'
