@@ -1,89 +1,105 @@
-# Seed3 48 kHz passthrough
+# Seed3 experiments
 
-Stereo passthrough using libDaisy, 48 kHz and 48 samples per callback.
-Channel 1 copies physical pin 16 to pin 18; channel 2 copies pin 17 to pin 19.
-Connect AGND (20) to DGND (40). Use a small line-level test signal and a
-scope or appropriate line input; guitar and headphone interfaces need circuitry.
+A C++ workspace for experimenting with audio processing on the Daisy Seed3,
+using libDaisy. Firmware behavior will change as experiments develop; see
+`src/main.cpp` for the current implementation.
 
 ## Setup (macOS)
 
-Requires [Homebrew](https://brew.sh) and Apple's Command Line Tools
-(`xcode-select --install`). Run from this directory:
+Install [Homebrew](https://brew.sh) and Apple's Command Line Tools
+(`xcode-select --install`), then run from the project root:
 
 ```sh
 make install
-make build
+make
 ```
 
-`make install` installs the `gcc-arm-embedded` cask and `dfu-util` formula
-if missing, then fetches libDaisy at the commit pinned in `scripts/install.sh`,
-including its submodules. Homebrew handles libusb automatically. The compiler
-cask may request administrator authentication through the macOS installer.
-Existing Homebrew installations are reused, not automatically upgraded.
-The installer does not overwrite a libDaisy checkout at another revision.
+`make install` installs the Homebrew `gcc-arm-embedded` cask and `dfu-util`
+formula if missing, and downloads the pinned libDaisy revision and its submodules
+into `libs/libDaisy/`. The compiler installer may request your administrator
+password. Existing packages are reused without upgrading them.
 
-Build and upload tools are resolved through your shell's `PATH`; there is no
-project-local toolchain. Only libDaisy is kept under `libs/libDaisy/`.
-Plain `make` builds libDaisy first, then the application, incrementally.
-After changing compiler versions, run `make clean` before rebuilding.
+The build uses the ARM compiler on your `PATH`; its version is not pinned.
+Run `make clean` before rebuilding after a compiler upgrade.
 
-## VS Code / clangd
-
-Install the database generator once, then generate the editor build information:
+For formatting and clangd editor support, also install:
 
 ```sh
-brew install compiledb
-make compiledb
+brew install clang-format compiledb
 ```
 
-This writes `compile_commands.json` at the project root using a Make dry run.
-It records the current compiler path and firmware flags without compiling.
-The generated file is ignored by Git. Regenerate it after changing source files,
-build flags, or compiler versions. The workspace settings allow clangd to query
-Homebrew's ARM compiler for its standard-library headers on Apple Silicon or Intel.
-Open this project root in VS Code and run **clangd: Restart language server**
-after the initial setup.
-The `.clangd` file removes a GCC-only optimization flag from editor analysis;
-the actual firmware compiler flags remain unchanged.
+## Make targets
 
-## Upload
+| Command | Purpose |
+| --- | --- |
+| `make install` | Install build/upload tools and fetch libDaisy. |
+| `make` or `make build` | Build libDaisy, then the firmware, incrementally. |
+| `make upload` | Build and upload firmware over USB DFU. |
+| `make program-dfu` | Alias for `make upload`. |
+| `make monitor` | Open USB serial in `screen` at 115200. |
+| `make format` | Format C/C++ files under `src/` using `.clang-format`. |
+| `make compiledb` | Generate `compile_commands.json` for clangd without compiling. |
+| `make clean` | Remove firmware and libDaisy build outputs; retain dependencies. |
+| `make help` | Show available commands. |
 
-Connect a USB-C **data** cable. Hold BOOT, press and release RESET, then release
-BOOT. With only the intended DFU device connected, run:
+Use `make JOBS=8` to change libDaisy build concurrency (default: 4).
+
+## Upload and monitor
+
+Connect the Seed3 using a USB-C **data** cable. Hold **BOOT**, press and release
+**RESET**, then release **BOOT** to enter DFU mode. With only the intended DFU
+device connected, run:
 
 ```sh
 make upload
 ```
 
-`make program-dfu` is an alias. Upload writes the application to internal flash
-at `0x08000000`, replacing the current firmware. No separate Daisy bootloader
-or ST-Link is required for this small application. If needed, press RESET after
-upload. USB DFU enumeration alone does not validate the audio path.
+Uploading replaces the firmware on the board. Press **RESET** if needed after
+uploading to start the application.
 
-## USB serial diagnostics
-
-Firmware enables libDaisy USB CDC logging on the USB-C port without waiting
-for a terminal. After flashing/resetting (outside DFU mode), run in your terminal:
+To view USB serial output from firmware that enables it, run in an interactive
+terminal while the board is running the application, outside DFU mode:
 
 ```sh
 make monitor
 ```
 
-This opens the single `/dev/cu.usbmodem*` device in `screen` at 115200.
-If multiple ports exist, it lists them instead of guessing; select one with
-`make monitor PORT=/dev/cu.usbmodemYOUR_PORT`. Exit screen with Ctrl-A,
-then K, then Y. A serial monitor such as Arduino's also works.
-The startup message may appear before you connect, so a status line repeats
-about once per second with uptime, sample rate, block size, and the number
-of audio callbacks since the previous report (normally around 1000).
-The onboard LED toggles each report. Logging happens only in the main loop.
-This verifies firmware activity and audio callback execution without a carrier;
-it does not verify analog input/output quality. Unconnected audio inputs may float.
+The monitor opens the single `/dev/cu.usbmodem*` port. If multiple ports exist,
+it lists them so you can select one explicitly:
 
-Output: `build/passthrough.bin` (also `.elf`, `.hex`, and linker map).
-`make clean` removes application and libDaisy build outputs, retaining library source and Homebrew tools.
-`make JOBS=8` changes libDaisy build concurrency.
+```sh
+make monitor PORT=/dev/cu.usbmodemYOUR_PORT
+```
 
-References: [Seed3 docs](https://docs.daisy.audio/hardware/Seed3/),
-[Daisy C++ setup](https://docs.daisy.audio/tutorials/cpp-dev-env/),
-[libDaisy](https://github.com/electro-smith/libDaisy).
+Replace the example with the actual port name. Exit with **Ctrl-A**, release,
+then **K**, then **Y** to confirm. Monitoring does not build or upload firmware.
+
+## VS Code / clangd
+
+Open the project root in VS Code with the clangd extension installed, then run:
+
+```sh
+make compiledb
+```
+
+Run **clangd: Restart language server** from the command palette after initial
+setup. Regenerate the database when adding or removing source files, changing
+build flags, or changing compiler versions; ordinary code edits do not require it.
+Workspace settings let clangd query Homebrew's ARM compiler for standard headers.
+
+## Layout
+
+- `src/`: application source.
+- `libs/`: downloaded dependencies, excluded from Git.
+- `build/`: generated firmware and debugging files, excluded from Git.
+- `scripts/`: dependency installation and serial monitor helpers.
+- `Makefile`: developer commands.
+- `firmware.mk`: application configuration using libDaisy's build rules.
+
+The generated compilation database and clangd cache are also excluded from Git.
+
+## Hardware reference
+
+Consult the [Seed3 documentation](https://docs.daisy.audio/hardware/Seed3/)
+for pinouts and electrical requirements, and
+[libDaisy](https://github.com/electro-smith/libDaisy) for hardware APIs.
