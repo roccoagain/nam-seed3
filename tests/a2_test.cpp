@@ -17,7 +17,7 @@ int main() {
         file.read(reinterpret_cast<char *>(reference.data()), reference.size() * sizeof(float));
         assert(file.gcount() == static_cast<std::streamsize>(reference.size() * sizeof(float)));
         NamProcessor processor;
-        assert(processor.Prepare(CreateAmpModel(static_cast<AmpId>(id)), 48000, 48));
+        assert(processor.SetModel(CreateAmpModel(static_cast<AmpId>(id)), 48000, 48));
         std::array<float, 48> input{}, output{};
         float maximum = 0;
         double error = 0, energy = 0;
@@ -40,7 +40,7 @@ int main() {
         std::cout << AmpName(static_cast<AmpId>(id)) << ": max error=" << maximum << " ESR=" << error / energy << std::endl;
         assert(maximum < 1e-4 && error / energy < 1e-8);
         // Reinitialization must reset the entire convolution history.
-        assert(processor.Prepare(CreateAmpModel(static_cast<AmpId>(id)), 48000, 48));
+        assert(processor.SetModel(CreateAmpModel(static_cast<AmpId>(id)), 48000, 48));
         input.fill(0);
         assert(processor.Process(input.data(), output.data(), 48));
         for (int i = 0; i < 48; ++i)

@@ -13,14 +13,14 @@ class NamAudio {
     static constexpr float kOutputGain = 0.8f;
 
     // Call with audio stopped. Failure leaves the path in bypass.
-    bool Init(AmpId amp = AmpId::Fender);
+    bool LoadAmpModel(AmpId amp = AmpId::Fender);
 
     // Left input to both outputs. Bypass still advances model state to allow
-    // meaningful comparisons. Buffers must contain at least frames samples.
-    void Process(const float *left, float *out_left, float *out_right, std::size_t frames, bool bypass);
+    // meaningful comparisons. Buffers must contain at least frame_count samples.
+    void Process(const float *input_left, float *output_left, float *output_right, std::size_t frame_count, bool bypass_model);
 
   private:
-    bool ProcessModel(const float *input, std::size_t frames);
+    bool ProcessModel(const float *input, std::size_t frame_count);
 
     NamProcessor processor_;
     bool ready_ = false;

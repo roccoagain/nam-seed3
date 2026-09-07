@@ -23,7 +23,7 @@ int main() {
         std::vector<float> reference(kTestSamples);
         file.read(reinterpret_cast<char *>(reference.data()), reference.size() * sizeof(float));
         assert(file.gcount() == static_cast<std::streamsize>(reference.size() * sizeof(float)));
-        assert(audio.Init(static_cast<AmpId>(id)));
+        assert(audio.LoadAmpModel(static_cast<AmpId>(id)));
         input.fill(0.5f);
         audio.Process(input.data(), left.data(), right.data(), 49, false);
         assert(left[48] == 0.4f && right[48] == 0.4f);
@@ -54,7 +54,7 @@ int main() {
         for (int i = 0; i < 3; ++i)
             assert(std::isfinite(left[i]) && std::fabs(left[i]) <= 1);
     }
-    assert(!audio.Init(static_cast<AmpId>(99)));
+    assert(!audio.LoadAmpModel(static_cast<AmpId>(99)));
     input.fill(0.5f);
     audio.Process(input.data(), left.data(), right.data(), 48, false);
     assert(left[0] == 0.4f && right[47] == 0.4f);

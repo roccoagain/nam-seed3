@@ -7,7 +7,7 @@ namespace nam {
 class DSP;
 }
 
-// Owns one mono model. Prepare/destruction require audio to be stopped;
+// Owns one mono model. SetModel/destruction require audio to be stopped;
 // Process is the only method intended for the audio callback.
 class NamProcessor {
   public:
@@ -20,13 +20,13 @@ class NamProcessor {
     // Takes ownership, validates format, then resets and prewarms the model.
     // Returns false on failure, preserving any previously prepared model.
     // Unknown model sample rates are rejected; no resampling is performed.
-    bool Prepare(std::unique_ptr<nam::DSP> model, double sample_rate, std::size_t max_block_size);
+    bool SetModel(std::unique_ptr<nam::DSP> model, double sample_rate_hz, std::size_t max_block_size);
 
-    // Input and output must be distinct buffers of at least frames samples.
+    // Input and output must be distinct buffers of at least frame_count samples.
     // Returns false without writing output if unprepared or arguments invalid.
     // No wrapper allocations; model runtime behavior must be validated
     // separately.
-    bool Process(float *input, float *output, std::size_t frames);
+    bool Process(float *input, float *output, std::size_t frame_count);
 
   private:
     std::unique_ptr<nam::DSP> model_;

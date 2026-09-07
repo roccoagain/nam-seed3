@@ -11,19 +11,19 @@ static_assert(std::is_same<NAM_SAMPLE, float>::value, "NAM must use the same flo
 NamProcessor::NamProcessor() = default;
 NamProcessor::~NamProcessor() = default;
 
-bool NamProcessor::Prepare(std::unique_ptr<nam::DSP> model, double sample_rate, std::size_t max_block_size) {
-    if (!model || !std::isfinite(sample_rate) || sample_rate <= 0.0)
+bool NamProcessor::SetModel(std::unique_ptr<nam::DSP> model, double sample_rate_hz, std::size_t max_block_size) {
+    if (!model || !std::isfinite(sample_rate_hz) || sample_rate_hz <= 0.0)
         return false;
     if (max_block_size == 0 || max_block_size > static_cast<std::size_t>(std::numeric_limits<int>::max()))
         return false;
     if (model->NumInputChannels() != 1 || model->NumOutputChannels() != 1)
         return false;
-    if (model->GetExpectedSampleRate() != sample_rate)
+    if (model->GetExpectedSampleRate() != sample_rate_hz)
         return false;
 
     try {
         model->SetPrewarmOnReset(true);
-        model->Reset(sample_rate, static_cast<int>(max_block_size));
+        model->Reset(sample_rate_hz, static_cast<int>(max_block_size));
     } catch (...) {
         return false;
     }
@@ -33,10 +33,10 @@ bool NamProcessor::Prepare(std::unique_ptr<nam::DSP> model, double sample_rate, 
     return true;
 }
 
-bool NamProcessor::Process(float *input, float *output, std::size_t frames) {
-    if (!model_ || !input || !output || input == output || frames == 0 || frames > max_block_size_) {
+bool NamProcessor::Process(float *input, float *output, std::size_t frame_count) {
+    if (!model_ || !input || !output || input == output || frame_count == 0 || frame_count > max_block_size_) {
         return false;
     }
-    model_->process(&input, &output, static_cast<int>(frames));
+    model_->process(&input, &output, static_cast<int>(frame_count));
     return true;
 }

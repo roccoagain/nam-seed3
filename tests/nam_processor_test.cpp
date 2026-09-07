@@ -31,22 +31,22 @@ int main() {
     output.fill(123.0f);
     assert(!processor.Process(input.data(), output.data(), 48));
     assert(output[0] == 123.0f);
-    assert(!processor.Prepare(nullptr, 48000.0, 48));
-    assert(!processor.Prepare(MakeModel(), 44100.0, 48));
-    assert(!processor.Prepare(MakeModel(), 48000.0, 0));
-    assert(processor.Prepare(MakeModel(), 48000.0, 48));
-    assert(!processor.Prepare(MakeModel(), std::numeric_limits<double>::quiet_NaN(), 48));
-    assert(!processor.Prepare(std::make_unique<nam::DSP>(2, 1, 48000.0), 48000.0, 48));
-    assert(!processor.Prepare(std::make_unique<nam::DSP>(1, 1, -1.0), 48000.0, 48));
-    assert(processor.Prepare(MakeModel(), 48000.0, 48));
+    assert(!processor.SetModel(nullptr, 48000.0, 48));
+    assert(!processor.SetModel(MakeModel(), 44100.0, 48));
+    assert(!processor.SetModel(MakeModel(), 48000.0, 0));
+    assert(processor.SetModel(MakeModel(), 48000.0, 48));
+    assert(!processor.SetModel(MakeModel(), std::numeric_limits<double>::quiet_NaN(), 48));
+    assert(!processor.SetModel(std::make_unique<nam::DSP>(2, 1, 48000.0), 48000.0, 48));
+    assert(!processor.SetModel(std::make_unique<nam::DSP>(1, 1, -1.0), 48000.0, 48));
+    assert(processor.SetModel(MakeModel(), 48000.0, 48));
     auto warming = std::make_unique<PrewarmModel>();
     auto *warmed = warming.get();
     warming->SetPrewarmOnReset(false);
-    assert(processor.Prepare(std::move(warming), 48000.0, 48));
-    assert(warmed->samples == 96); // Prepare must prewarm exactly once.
+    assert(processor.SetModel(std::move(warming), 48000.0, 48));
+    assert(warmed->samples == 96); // SetModel must prewarm exactly once.
     auto reference = MakeModel();
     reference->Reset(48000.0, 48);
-    assert(!processor.Prepare(std::make_unique<FailingModel>(), 48000.0, 48));
+    assert(!processor.SetModel(std::make_unique<FailingModel>(), 48000.0, 48));
     assert(!processor.Process(input.data(), output.data(), 49));
     assert(!processor.Process(nullptr, output.data(), 48));
     assert(!processor.Process(input.data(), input.data(), 48));
