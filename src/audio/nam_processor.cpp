@@ -1,4 +1,4 @@
-#include "nam_processor.h"
+#include "audio/nam_processor.h"
 
 #include "NAM/dsp.h"
 #include <cmath>

@@ -67,7 +67,9 @@ Host tests require a C++20 compiler.
 
 | Path | Contents |
 | --- | --- |
-| `src/` | Firmware, audio processing, and the A2-Lite engine. |
+| `src/main.cpp` | Hardware setup, USB commands, and the application loop. |
+| `src/audio/` | Model execution, audio buffers, gain, bypass, and output handling. |
+| `src/models/` | Amp model construction, the A2-Lite engine, and its license. |
 | `make/` | Firmware build and model-generation rules. |
 | `scripts/` | Setup, download, conversion, and serial-monitor tools. |
 | `models/local/` | Downloaded amp captures; Git-ignored. |

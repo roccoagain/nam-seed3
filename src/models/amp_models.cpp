@@ -1,6 +1,6 @@
-#include "amp_models.h"
+#include "models/amp_models.h"
 
-#include "a2_lite.h"
+#include "models/a2_lite.h"
 #include "embedded_a2_data.h"
 
 const char *AmpName(AmpId id) {

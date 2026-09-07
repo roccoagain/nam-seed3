@@ -1,7 +1,7 @@
 #include "NAM/dsp.h"
 #include "allocation_guard.h"
 #include "audio_stimulus.h"
-#include "nam_audio.h"
+#include "audio/nam_audio.h"
 #include <algorithm>
 #include <array>
 #include <cassert>

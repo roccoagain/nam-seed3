@@ -1,7 +1,7 @@
 #pragma once
 
-#include "amp_models.h"
-#include "nam_processor.h"
+#include "models/amp_models.h"
+#include "audio/nam_processor.h"
 #include <array>
 #include <cstddef>
 

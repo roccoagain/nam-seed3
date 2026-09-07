@@ -1,8 +1,8 @@
 TARGET = passthrough
 NAM_DIR = libs/NeuralAmpModelerCore
-NAM_SOURCES = src/a2_lite.cpp build/nam/dsp.cpp
-CPP_SOURCES = src/main.cpp src/nam_processor.cpp src/nam_audio.cpp src/amp_models.cpp $(NAM_SOURCES)
-C_INCLUDES = -Ibuild/generated -I$(NAM_DIR) -I$(NAM_DIR)/NAM -I$(NAM_DIR)/Dependencies/eigen -I$(NAM_DIR)/Dependencies/nlohmann
+NAM_SOURCES = src/models/a2_lite.cpp build/nam/dsp.cpp
+CPP_SOURCES = src/main.cpp src/audio/nam_processor.cpp src/audio/nam_audio.cpp src/models/amp_models.cpp $(NAM_SOURCES)
+C_INCLUDES = -Isrc -Ibuild/generated -I$(NAM_DIR) -I$(NAM_DIR)/NAM -I$(NAM_DIR)/Dependencies/eigen -I$(NAM_DIR)/Dependencies/nlohmann
 C_DEFS = -DNAM_SAMPLE_FLOAT
 CPP_STANDARD = -std=gnu++17
 # Optimize application and NAM code for size.

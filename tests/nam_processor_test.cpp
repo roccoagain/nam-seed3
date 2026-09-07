@@ -1,5 +1,5 @@
 #include "NAM/dsp.h"
-#include "nam_processor.h"
+#include "audio/nam_processor.h"
 #include <array>
 #include <cassert>
 #include <cmath>

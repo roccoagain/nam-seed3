@@ -20,9 +20,9 @@ build/tests/a2-2.f32: models/local/vox-ac30-chimey-a2-lite.nam build/tests/rende
 build/tests/a2-3.f32: models/local/marshall-jcm800-g5-a2-lite.nam build/tests/render_a2_reference
 	./build/tests/render_a2_reference $< $@
 
-build/tests/a2_test: tests/a2_test.cpp tests/audio_stimulus.h tests/allocation_guard.h src/a2_lite.cpp src/a2_lite.h src/amp_models.cpp src/amp_models.h src/nam_processor.cpp src/nam_processor.h build/generated/embedded_a2_data.h tests/a2.mk
+build/tests/a2_test: tests/a2_test.cpp tests/audio_stimulus.h tests/allocation_guard.h src/models/a2_lite.cpp src/models/a2_lite.h src/models/amp_models.cpp src/models/amp_models.h src/audio/nam_processor.cpp src/audio/nam_processor.h build/generated/embedded_a2_data.h tests/a2.mk
 	@mkdir -p $(@D)
-	$(CXX) $(FLAGS) $(INCLUDES) -Ibuild/generated tests/a2_test.cpp src/a2_lite.cpp src/amp_models.cpp src/nam_processor.cpp $(NAM_DIR)/NAM/dsp.cpp -o $@
+	$(CXX) $(FLAGS) $(INCLUDES) -Ibuild/generated tests/a2_test.cpp src/models/a2_lite.cpp src/models/amp_models.cpp src/audio/nam_processor.cpp $(NAM_DIR)/NAM/dsp.cpp -o $@
 
 .PHONY: test-a2
 test-a2: build/tests/a2_test build/tests/a2-1.f32 build/tests/a2-2.f32 build/tests/a2-3.f32

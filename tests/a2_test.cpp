@@ -1,8 +1,8 @@
 #include "NAM/dsp.h"
 #include "allocation_guard.h"
-#include "amp_models.h"
+#include "models/amp_models.h"
 #include "audio_stimulus.h"
-#include "nam_processor.h"
+#include "audio/nam_processor.h"
 #include <array>
 #include <cassert>
 #include <cmath>

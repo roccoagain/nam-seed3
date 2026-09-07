@@ -1,5 +1,5 @@
 #include "daisy_seed.h"
-#include "nam_audio.h"
+#include "audio/nam_audio.h"
 #include <atomic>
 #include <cstdint>
 
