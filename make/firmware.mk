@@ -5,8 +5,8 @@ CPP_SOURCES = src/main.cpp src/audio/nam_processor.cpp src/audio/nam_audio.cpp s
 C_INCLUDES = -Isrc -Ibuild/generated -I$(NAM_DIR) -I$(NAM_DIR)/NAM -I$(NAM_DIR)/Dependencies/eigen -I$(NAM_DIR)/Dependencies/nlohmann
 C_DEFS = -DNAM_SAMPLE_FLOAT
 CPP_STANDARD = -std=gnu++17
-# Optimize application and NAM code for size.
-OPT = -Os
+# Optimize application and NAM code for speed; libDaisy builds with -Os.
+OPT = -O3
 LIBDAISY_DIR = libs/libDaisy
 SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core
 APP_TYPE = BOOT_NONE
