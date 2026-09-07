@@ -13,10 +13,12 @@ command -v brew >/dev/null || {
 if ! brew list --cask gcc-arm-embedded >/dev/null 2>&1; then
     brew install --cask gcc-arm-embedded
 fi
-if ! brew list --formula dfu-util >/dev/null 2>&1; then
-    brew install dfu-util
-fi
-for tool in git make arm-none-eabi-g++ dfu-util; do
+for formula in dfu-util jq; do
+    if ! brew list --formula "$formula" >/dev/null 2>&1; then
+        brew install "$formula"
+    fi
+done
+for tool in git make arm-none-eabi-g++ dfu-util jq; do
     command -v "$tool" >/dev/null || {
         echo "Missing $tool on PATH; check your Homebrew shell setup." >&2
         exit 1

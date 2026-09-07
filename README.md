@@ -9,13 +9,12 @@ On macOS, install [Homebrew](https://brew.sh) and Apple's Command Line Tools
 (`xcode-select --install`), then run:
 
 ```sh
-brew install jq
 make install
 bash scripts/download_models.sh
 make
 ```
 
-`make install` installs the ARM compiler and DFU uploader and fetches pinned
+`make install` installs the ARM compiler, DFU uploader, and `jq`, and fetches pinned
 dependencies. The download script extracts the existing Lite models from
 Tone3000 captures into Git-ignored `models/local/`.
 
