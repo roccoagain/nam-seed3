@@ -6,18 +6,21 @@ Fender '65 Twin Reverb, Vox AC30 Chimey, and Marshall JCM800 (gain 5).
 ## Setup
 
 On macOS, install [Homebrew](https://brew.sh) and Apple's Command Line Tools
-(`xcode-select --install`), then run from the repository root:
+(`xcode-select --install`). On Ubuntu, the installer uses `apt-get` and requests
+`sudo` access when needed. Run from the repository root:
 
 ```sh
-make install
+bash scripts/install.sh
 bash scripts/download_models.sh
 make
 ```
 
-`make install` installs the ARM compiler, DFU uploader, and `jq`, then fetches
+`make install` runs the same installer. It installs the ARM compiler, DFU uploader,
+and `jq`, then fetches
 pinned versions of libDaisy and NAM Core. The download script saves the three
 Tone3000 models to Git-ignored `models/local/`. The build embeds their weights
-in the firmware.
+in the firmware. On Ubuntu, the installer also installs the build and download
+prerequisites, including the ARM C/C++ libraries and Python 3.
 
 ## Upload and play
 

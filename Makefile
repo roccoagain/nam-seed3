@@ -43,7 +43,7 @@ clean:
 	@if test -f libs/libDaisy/Makefile; then $(MAKE) -C libs/libDaisy clean; fi
 
 help:
-	@echo 'make install  Install Homebrew compiler/uploader and fetch pinned dependencies.'
+	@echo 'make install  Install tools with Homebrew or apt and fetch pinned dependencies.'
 	@echo 'make build    Build libDaisy and three-amp A2-Lite firmware.'
 	@echo 'make model    Convert the downloaded A2-Lite models to embedded float data.'
 	@echo 'make test     Run upstream A2 comparisons and sanitized host audio tests.'
