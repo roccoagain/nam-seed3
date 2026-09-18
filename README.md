@@ -48,6 +48,28 @@ amp-only models; cabinet filtering and hardware gain calibration are not impleme
 If multiple serial ports are connected, use `make monitor PORT=/dev/cu.usbmodem…`.
 Exit the monitor with **Ctrl-A**, then **K**, then **Y**.
 
+### Serial status
+
+The firmware prints one status line per second:
+
+```
+--- NAM A2-Lite | 48-sample blocks @ 48 kHz | budget 1000 us/block | keys: 0=bypass 1=Twin65 2=AC30 3=JCM800 ---
+[active Fender Twin65          ]  avg  61% ( 612 us)  peak  63% ( 627 us)  headroom   373 us  blocks 1000  overruns 0
+>>> bypass
+[bypass -                      ]  avg   0% (   2 us)  peak   0% (   3 us)  headroom   997 us  blocks 1000  overruns 0
+```
+
+| Field | Meaning |
+| --- | --- |
+| `[mode amp]` | `active` with the running model, `bypass`, or `failed` if the model did not load (audio is bypassed). |
+| `avg` | Mean audio-callback time over the last second, as a percentage of the block budget and in microseconds. |
+| `peak` | Longest single callback over the last second. |
+| `headroom` | Budget minus peak: how much slower the callback could get before an overrun. Negative means an overrun happened. |
+| `blocks` | Callbacks in the last second (1000 at 48 samples per block and 48 kHz). |
+| `overruns` | Callbacks that exceeded the budget in the last second. Lines with overruns are marked `<-- OVERRUN`. |
+
+The header repeats every 20 lines, and `>>>` lines record model switches.
+
 ## Development
 
 | Command | Purpose |
