@@ -42,7 +42,12 @@ constexpr int ReceptiveField() {
 } // namespace a2_lite
 
 // Fixed-shape A2-Lite inference. Weights must outlive this object (embedded
-// flash).
+// flash). Buffers are allocated in Reset; process never allocates.
+//
+// Each layer's delay line only holds that layer's own input, so a block is
+// processed layer by layer rather than sample by sample. Delay lines are
+// mirrored ring buffers: every frame is stored twice, one period apart, so
+// any window of past frames is contiguous and taps are plain offsets.
 class A2Lite final : public nam::DSP {
   public:
     static constexpr std::size_t kWeights = a2_lite::WeightCount();
@@ -51,6 +56,25 @@ class A2Lite final : public nam::DSP {
     void process(float **input, float **output, int frame_count) override;
 
   private:
+    // Ring of `period` interleaved [frame][kChannels] frames, stored twice.
+    struct DelayLine {
+        std::vector<float> samples;
+        int period = 0; // context frames plus one block
+        int write = 0;  // next frame to write, in [0, period)
+
+        void Resize(int context_frames, int max_block_size);
+        void Clear();
+        // Stores frames at the write position and returns that position.
+        int Push(const float *frames, int frame_count);
+        // Frames [index, index + frame_count) counted back from a Push result.
+        const float *Window(int start, int frames_back) const {
+            int index = start - frames_back;
+            if (index < 0)
+                index += period;
+            return &samples[static_cast<std::size_t>(index) * a2_lite::kChannels];
+        }
+    };
+
     struct Layer {
         // Views into the weight stream; see the layout above.
         const float *taps = nullptr;
@@ -60,22 +84,21 @@ class A2Lite final : public nam::DSP {
         const float *residual_bias = nullptr;
         int kernel_size = 0;
         int dilation = 0;
-        // Power-of-two ring buffer of [history_size][kChannels] samples.
-        std::vector<float> history;
-        uint32_t history_write_index = 0;
-        uint32_t history_wrap_mask = 0;
+        DelayLine history;
     };
 
     int GetPrewarmSamples() override { return a2_lite::ReceptiveField(); }
-    static void ProcessLayer(Layer &layer, float conditioning_sample, float *residual_features, float *skip_accumulator);
-    float ProcessHead(const float *skip_accumulator);
-    float ProcessSample(float input_sample);
+    void ProcessLayer(Layer &layer, const float *conditioning, int frame_count);
+    void ProcessHead(float *output, int frame_count);
 
     const float *input_projection_;
     std::array<Layer, a2_lite::kLayers> layers_;
     const float *head_taps_;
     float head_bias_;
     float head_scale_;
-    std::array<float, a2_lite::kHeadTaps * a2_lite::kChannels> head_history_{};
-    uint32_t head_history_write_index_ = 0;
+    DelayLine head_history_;
+    // Per-block working set of [frame][kChannels] values.
+    std::vector<float> residual_;
+    std::vector<float> skip_;
+    std::vector<float> activation_;
 };

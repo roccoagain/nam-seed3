@@ -1,5 +1,5 @@
-#include "daisy_seed.h"
 #include "audio/nam_audio.h"
+#include "daisy_seed.h"
 #include <atomic>
 #include <cstdint>
 
@@ -46,7 +46,7 @@ struct AppState {
 };
 
 static void InitHardware() {
-    seed.Init();
+    seed.Init(true); // 480 MHz boost; the model needs the headroom.
     seed.SetAudioSampleRate(daisy::SaiHandle::Config::SampleRate::SAI_48KHZ);
     seed.SetAudioBlockSize(NamAudio::kBlockSize);
     seed.StartLog(false);

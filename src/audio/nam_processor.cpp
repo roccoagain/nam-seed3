@@ -11,6 +11,11 @@ static_assert(std::is_same<NAM_SAMPLE, float>::value, "NAM must use the same flo
 NamProcessor::NamProcessor() = default;
 NamProcessor::~NamProcessor() = default;
 
+void NamProcessor::ClearModel() {
+    model_.reset();
+    max_block_size_ = 0;
+}
+
 bool NamProcessor::SetModel(std::unique_ptr<nam::DSP> model, double sample_rate_hz, std::size_t max_block_size) {
     if (!model || !std::isfinite(sample_rate_hz) || sample_rate_hz <= 0.0)
         return false;

@@ -20,6 +20,9 @@ class NamProcessor {
     // Takes ownership, validates format, then resets and prewarms the model.
     // Returns false on failure, preserving any previously prepared model.
     // Unknown model sample rates are rejected; no resampling is performed.
+    // Releases the current model so its memory can be reused by the next one.
+    void ClearModel();
+
     bool SetModel(std::unique_ptr<nam::DSP> model, double sample_rate_hz, std::size_t max_block_size);
 
     // Input and output must be distinct buffers of at least frame_count samples.

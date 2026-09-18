@@ -14,6 +14,8 @@ float ApplyOutputGainAndClamp(float sample) {
 
 bool NamAudio::LoadAmpModel(AmpId amp) {
     ready_ = false;
+    // Two models never coexist; the delay lines are a large share of SRAM.
+    processor_.ClearModel();
     try {
         ready_ = processor_.SetModel(CreateAmpModel(amp), kSampleRate, kBlockSize);
     } catch (...) {
