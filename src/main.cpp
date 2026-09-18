@@ -12,6 +12,7 @@ static std::atomic<uint32_t> requested_amp{1};
 static_assert(ATOMIC_INT_LOCK_FREE == 2, "Audio counters must be lock-free");
 // Only changed while audio is stopped.
 static bool bypass = false;
+static uint32_t ticks_per_us = 1; // Set in InitHardware after clocks are configured.
 
 static void RecordCallbackTiming(uint32_t elapsed_us) {
     uint32_t previous = max_callback_us.load(std::memory_order_relaxed);
@@ -23,10 +24,13 @@ static void RecordCallbackTiming(uint32_t elapsed_us) {
 }
 
 void AudioCallback(daisy::AudioHandle::InputBuffer input_channels, daisy::AudioHandle::OutputBuffer output_channels, size_t frame_count) {
-    const uint32_t start_us = daisy::System::GetUs();
+    // Measure in raw timer ticks: GetUs() wraps every ~17.9 s (2^32 ticks at
+    // 240 MHz), so subtracting two GetUs() values across the wrap yields
+    // garbage. Tick subtraction is exact modulo 2^32.
+    const uint32_t start_tick = daisy::System::GetTick();
     audio.Process(input_channels[0], output_channels[0], output_channels[1], frame_count, bypass);
-    const uint32_t elapsed_us = daisy::System::GetUs() - start_us;
-    RecordCallbackTiming(elapsed_us);
+    const uint32_t elapsed_ticks = daisy::System::GetTick() - start_tick;
+    RecordCallbackTiming(elapsed_ticks / ticks_per_us);
 }
 
 // USB interrupt: record a command only. Never allocate or construct a model
@@ -47,6 +51,7 @@ struct AppState {
 
 static void InitHardware() {
     seed.Init(true); // 480 MHz boost; the model needs the headroom.
+    ticks_per_us = daisy::System::GetTickFreq() / 1000000;
     seed.SetAudioSampleRate(daisy::SaiHandle::Config::SampleRate::SAI_48KHZ);
     seed.SetAudioBlockSize(NamAudio::kBlockSize);
     seed.StartLog(false);
