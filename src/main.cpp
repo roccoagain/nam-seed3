@@ -7,18 +7,22 @@ daisy::DaisySeed seed;
 static NamAudio audio;
 static std::atomic<uint32_t> audio_callbacks{0};
 static std::atomic<uint32_t> max_callback_us{0};
+static std::atomic<uint32_t> total_callback_us{0};
 static std::atomic<uint32_t> overruns{0};
 static std::atomic<uint32_t> requested_amp{1};
 static_assert(ATOMIC_INT_LOCK_FREE == 2, "Audio counters must be lock-free");
 // Only changed while audio is stopped.
 static bool bypass = false;
 static uint32_t ticks_per_us = 1; // Set in InitHardware after clocks are configured.
+// Wall-clock time one audio block covers; the callback must finish within it.
+static constexpr uint32_t kBlockBudgetUs = static_cast<uint32_t>(NamAudio::kBlockSize * 1000000.0 / NamAudio::kSampleRate);
 
 static void RecordCallbackTiming(uint32_t elapsed_us) {
     uint32_t previous = max_callback_us.load(std::memory_order_relaxed);
     while (elapsed_us > previous && !max_callback_us.compare_exchange_weak(previous, elapsed_us, std::memory_order_relaxed)) {
     }
-    if (elapsed_us >= 1000)
+    total_callback_us.fetch_add(elapsed_us, std::memory_order_relaxed);
+    if (elapsed_us >= kBlockBudgetUs)
         overruns.fetch_add(1, std::memory_order_relaxed);
     audio_callbacks.fetch_add(1, std::memory_order_relaxed);
 }
@@ -47,7 +51,13 @@ struct AppState {
     bool model_ready = false;
     uint32_t last_report_ms = 0;
     bool led_on = false;
+    uint32_t report_count = 0;
 };
+
+static void PrintHeader() {
+    seed.PrintLine("--- NAM A2-Lite | %lu-sample blocks @ 48 kHz | budget %lu us/block | keys: 0=bypass 1=Twin65 2=AC30 3=JCM800 ---",
+                   static_cast<unsigned long>(NamAudio::kBlockSize), static_cast<unsigned long>(kBlockBudgetUs));
+}
 
 static void InitHardware() {
     seed.Init(true); // 480 MHz boost; the model needs the headroom.
@@ -73,6 +83,10 @@ static void ApplyPendingAmpCommand(AppState &state) {
     }
     state.current_command = command;
     seed.StartAudio(AudioCallback);
+    if (bypass)
+        seed.PrintLine(">>> bypass");
+    else
+        seed.PrintLine(">>> %s %s", AmpName(state.selected_amp), state.model_ready ? "loaded" : "FAILED to load");
 }
 
 static void ReportStatus(AppState &state) {
@@ -83,9 +97,22 @@ static void ReportStatus(AppState &state) {
     state.last_report_ms = now_ms;
     state.led_on = !state.led_on;
     seed.SetLed(state.led_on);
-    seed.PrintLine("NAM A2-Lite: amp=%s ready=%u bypass=%u callbacks=%lu "
-                   "max_us=%lu overruns=%lu | 0=clean 1=Twin65 2=AC30 3=JCM800",
-                   AmpName(state.selected_amp), static_cast<unsigned>(state.model_ready), static_cast<unsigned>(bypass || !state.model_ready), static_cast<unsigned long>(audio_callbacks.exchange(0)), static_cast<unsigned long>(max_callback_us.exchange(0)), static_cast<unsigned long>(overruns.exchange(0)));
+    if (state.report_count++ % 20 == 0)
+        PrintHeader();
+
+    const uint32_t callbacks = audio_callbacks.exchange(0);
+    const uint32_t max_us = max_callback_us.exchange(0);
+    const uint32_t total_us = total_callback_us.exchange(0);
+    const uint32_t overrun_count = overruns.exchange(0);
+    const uint32_t avg_us = callbacks ? total_us / callbacks : 0;
+    const uint32_t avg_pct = avg_us * 100 / kBlockBudgetUs;
+    const uint32_t peak_pct = max_us * 100 / kBlockBudgetUs;
+    const int32_t headroom_us = static_cast<int32_t>(kBlockBudgetUs) - static_cast<int32_t>(max_us);
+    const bool active = !bypass && state.model_ready;
+
+    const char *mode = bypass ? "bypass" : (state.model_ready ? "active" : "failed");
+    seed.PrintLine("[%-6s %-22s]  avg %3lu%% (%4lu us)  peak %3lu%% (%4lu us)  headroom %5ld us  blocks %4lu  overruns %lu%s",
+                   mode, active ? AmpName(state.selected_amp) : "-", static_cast<unsigned long>(avg_pct), static_cast<unsigned long>(avg_us), static_cast<unsigned long>(peak_pct), static_cast<unsigned long>(max_us), static_cast<long>(headroom_us), static_cast<unsigned long>(callbacks), static_cast<unsigned long>(overrun_count), overrun_count ? "  <-- OVERRUN" : "");
 }
 
 int main() {
