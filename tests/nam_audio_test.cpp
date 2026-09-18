@@ -1,7 +1,7 @@
 #include "NAM/dsp.h"
 #include "allocation_guard.h"
-#include "audio_stimulus.h"
 #include "audio/nam_audio.h"
+#include "audio_stimulus.h"
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -11,7 +11,9 @@
 #include <limits>
 #include <vector>
 
-int main() {
+// Usage: nam_audio_test <reference.f32>... with one upstream rendering per AmpId, in order.
+int main(int argc, char **argv) {
+    assert(argc == 4);
     NamAudio audio;
     std::array<float, 49> input{}, left{}, right{};
     input.fill(0.5f);
@@ -19,7 +21,7 @@ int main() {
     assert(left[48] == 0.4f && right[48] == 0.4f);
     // Reuse the audio path across switches, including switching back to Fender.
     for (int id : {1, 2, 3, 1}) {
-        std::ifstream file("build/tests/a2-" + std::to_string(id) + ".f32", std::ios::binary);
+        std::ifstream file(argv[id], std::ios::binary);
         std::vector<float> reference(kTestSamples);
         file.read(reinterpret_cast<char *>(reference.data()), reference.size() * sizeof(float));
         assert(file.gcount() == static_cast<std::streamsize>(reference.size() * sizeof(float)));

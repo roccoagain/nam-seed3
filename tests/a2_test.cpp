@@ -1,8 +1,9 @@
+// Usage: a2_test <reference.f32>... with one upstream rendering per AmpId, in order.
 #include "NAM/dsp.h"
 #include "allocation_guard.h"
-#include "models/amp_models.h"
-#include "audio_stimulus.h"
 #include "audio/nam_processor.h"
+#include "audio_stimulus.h"
+#include "models/amp_models.h"
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -10,19 +11,31 @@
 #include <iostream>
 #include <vector>
 
-int main() {
+static std::vector<float> ReadReference(const char *path) {
+    std::ifstream file(path, std::ios::binary);
+    std::vector<float> reference(kTestSamples);
+    file.read(reinterpret_cast<char *>(reference.data()), reference.size() * sizeof(float));
+    assert(file.gcount() == static_cast<std::streamsize>(reference.size() * sizeof(float)));
+    return reference;
+}
+
+// Mix block sizes of 1, 17, and 48 frames so ring buffers wrap at odd offsets.
+static int NextBlockSize(int offset) {
+    const int frames = offset % 5 == 0 ? 1 : (offset % 3 == 0 ? 48 : 17);
+    return std::min(frames, kTestSamples - offset);
+}
+
+int main(int argc, char **argv) {
+    assert(argc == 4);
     for (int id = 1; id <= 3; ++id) {
-        std::ifstream file("build/tests/a2-" + std::to_string(id) + ".f32", std::ios::binary);
-        std::vector<float> reference(kTestSamples);
-        file.read(reinterpret_cast<char *>(reference.data()), reference.size() * sizeof(float));
-        assert(file.gcount() == static_cast<std::streamsize>(reference.size() * sizeof(float)));
+        const std::vector<float> reference = ReadReference(argv[id]);
         NamProcessor processor;
         assert(processor.SetModel(CreateAmpModel(static_cast<AmpId>(id)), 48000, 48));
         std::array<float, 48> input{}, output{};
         float maximum = 0;
         double error = 0, energy = 0;
         for (int offset = 0; offset < kTestSamples;) {
-            const int frames = std::min(offset % 5 == 0 ? 1 : (offset % 3 == 0 ? 48 : 17), kTestSamples - offset);
+            const int frames = NextBlockSize(offset);
             for (int i = 0; i < frames; ++i)
                 input[i] = TestInput(offset + i);
             const auto allocations = allocation_count;

@@ -1,7 +1,11 @@
 #include "models/amp_models.h"
 
-#include "models/a2_lite.h"
 #include "embedded_a2_data.h"
+#include "models/a2_lite.h"
+
+static_assert(sizeof(embedded_a2::kFenderTwin65) == A2Lite::kWeights * sizeof(float), "embedded model size does not match the engine");
+static_assert(sizeof(embedded_a2::kVoxAc30Chimey) == A2Lite::kWeights * sizeof(float), "embedded model size does not match the engine");
+static_assert(sizeof(embedded_a2::kMarshallJcm800G5) == A2Lite::kWeights * sizeof(float), "embedded model size does not match the engine");
 
 const char *AmpName(AmpId id) {
     switch (id) {
@@ -18,11 +22,11 @@ const char *AmpName(AmpId id) {
 std::unique_ptr<nam::DSP> CreateAmpModel(AmpId id) {
     switch (id) {
     case AmpId::Fender:
-        return std::make_unique<A2Lite>(embedded_a2::kWeights0);
+        return std::make_unique<A2Lite>(embedded_a2::kFenderTwin65);
     case AmpId::Vox:
-        return std::make_unique<A2Lite>(embedded_a2::kWeights1);
+        return std::make_unique<A2Lite>(embedded_a2::kVoxAc30Chimey);
     case AmpId::Marshall:
-        return std::make_unique<A2Lite>(embedded_a2::kWeights2);
+        return std::make_unique<A2Lite>(embedded_a2::kMarshallJcm800G5);
     }
     return nullptr;
 }

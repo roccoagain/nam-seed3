@@ -32,9 +32,9 @@ class ConvertA2Test(unittest.TestCase):
                     converter.convert(path)
 
     def test_all_required_models(self):
-        for name in converter.FILES:
+        for name in converter.MODELS.values():
             packed, digest = converter.convert(Path('models/local') / name)
-            self.assertEqual(len(packed), 1871)
+            self.assertEqual(len(packed), converter.WEIGHT_COUNT)
             self.assertEqual(len(digest), 64)
 
 

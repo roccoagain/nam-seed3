@@ -13,7 +13,7 @@ include tests/a2.mk
 .PHONY: test
 test: $(TEST_BIN) build/tests/nam_audio_test test-a2
 	./$(TEST_BIN)
-	./build/tests/nam_audio_test
+	./build/tests/nam_audio_test $(A2_REFERENCES)
 	python3 -B tests/test_convert_a2.py
 
 $(TEST_BIN): $(SOURCES) src/audio/nam_processor.h tests/audio_stimulus.h tests/Makefile $(wildcard $(NAM_DIR)/NAM/*.h)

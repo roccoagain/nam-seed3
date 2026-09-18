@@ -8,30 +8,40 @@ import math
 from pathlib import Path
 import struct
 
-FILES = ("fender-twin65-a2-lite.nam", "vox-ac30-chimey-a2-lite.nam",
-         "marshall-jcm800-g5-a2-lite.nam")
+# Array name in the generated header -> model file. Order matches AmpId.
+MODELS = {"kFenderTwin65": "fender-twin65-a2-lite.nam",
+          "kVoxAc30Chimey": "vox-ac30-chimey-a2-lite.nam",
+          "kMarshallJcm800G5": "marshall-jcm800-g5-a2-lite.nam"}
+
+# Network shape; must match src/models/a2_lite.h.
+CHANNELS = 3
+HEAD_TAPS = 16
 KERNELS = [6] * 14 + [15, 15] + [6] * 7
 DILATIONS = [1, 3, 7, 17, 41, 101, 239] * 2 + [1, 13] + [1, 3, 7, 17, 41, 101, 239]
+LAYERS = len(KERNELS)
+# Per-layer weights after the conv taps: bias, conditioning, residual matrix, residual bias.
+LAYER_TAIL = 3 * CHANNELS + CHANNELS * CHANNELS
+WEIGHT_COUNT = (CHANNELS + sum(CHANNELS * CHANNELS * k + LAYER_TAIL for k in KERNELS)
+                + HEAD_TAPS * CHANNELS + 2)
 
 
 def expected_layer():
-    layer = dict(input_size=1, condition_size=1, channels=3, bottleneck=3,
-                 head=dict(out_channels=1, kernel_size=16, bias=True),
+    layer = dict(input_size=1, condition_size=1, channels=CHANNELS, bottleneck=CHANNELS,
+                 head=dict(out_channels=1, kernel_size=HEAD_TAPS, bias=True),
                  kernel_sizes=KERNELS, dilations=DILATIONS,
-                 activation=[dict(type="LeakyReLU", negative_slope=0.01)] * 23,
+                 activation=[dict(type="LeakyReLU", negative_slope=0.01)] * LAYERS,
                  head1x1=dict(active=False, out_channels=1, groups=1),
                  layer1x1=dict(active=True, groups=1), groups_input=1,
-                 groups_input_mixin=1, gating_mode=["none"] * 23,
-                 secondary_activation=[None] * 23, slimmable=None)
+                 groups_input_mixin=1, gating_mode=["none"] * LAYERS,
+                 secondary_activation=[None] * LAYERS, slimmable=None)
     for name in ("conv_pre", "conv_post", "input_mixin_pre", "input_mixin_post",
                  "activation_pre", "activation_post", "layer1x1_post", "head1x1_post"):
         layer[name + "_film"] = dict(active=False, shift=True, groups=1)
     return layer
 
 
-def convert(path):
-    raw = path.read_bytes()
-    model = json.loads(raw)
+def validate(model, path):
+    """Reject anything but the exact A2-Lite architecture the engine implements."""
     if (model.get("version") != "0.7.0" or model.get("architecture") != "WaveNet"
             or model.get("sample_rate") != 48000):
         raise ValueError(f"{path}: expected NAM 0.7.0, 48 kHz WaveNet")
@@ -39,9 +49,11 @@ def convert(path):
     if (set(config) != {"layers", "head", "head_scale"}
             or config["layers"] != [expected_layer()] or config["head"] is not None):
         raise ValueError(f"{path}: unsupported A2-Lite configuration")
-    weights = model["weights"]
-    if len(weights) != 1871:
-        raise ValueError(f"{path}: expected 1871 weights")
+    if len(model["weights"]) != WEIGHT_COUNT:
+        raise ValueError(f"{path}: expected {WEIGHT_COUNT} weights")
+
+
+def to_float32(weights, path):
     floats = []
     for value in weights:
         if type(value) not in (int, float) or not math.isfinite(value):
@@ -50,19 +62,32 @@ def convert(path):
         if not math.isfinite(value):
             raise ValueError(f"{path}: weight outside float32 range")
         floats.append(value)
-    # Offline rearrangement only: Conv1D [out][in][tap] -> [tap][in][out].
-    packed = floats[:3]
-    offset = 3
+    return floats
+
+
+def pack(floats):
+    """Reorder conv taps from NAM's [out][in][tap] to the engine's [tap][in][out]."""
+    packed = floats[:CHANNELS]
+    offset = CHANNELS
     for kernel in KERNELS:
-        packed += [floats[offset + (out * 3 + inp) * kernel + tap]
-                   for tap in range(kernel) for inp in range(3) for out in range(3)]
-        offset += 9 * kernel
-        packed += floats[offset:offset + 18]  # bias, mixin, residual matrix/bias
-        offset += 18
-    packed += [floats[offset + inp * 16 + tap] for tap in range(16) for inp in range(3)]
-    packed += floats[offset + 48:]  # head bias and authoritative weight-stream scale
-    assert len(packed) == 1871
-    return packed, hashlib.sha256(raw).hexdigest()
+        packed += [floats[offset + (out * CHANNELS + inp) * kernel + tap]
+                   for tap in range(kernel) for inp in range(CHANNELS) for out in range(CHANNELS)]
+        offset += CHANNELS * CHANNELS * kernel
+        packed += floats[offset:offset + LAYER_TAIL]
+        offset += LAYER_TAIL
+    packed += [floats[offset + inp * HEAD_TAPS + tap]
+               for tap in range(HEAD_TAPS) for inp in range(CHANNELS)]
+    offset += HEAD_TAPS * CHANNELS
+    packed += floats[offset:]  # head bias and authoritative weight-stream scale
+    assert len(packed) == WEIGHT_COUNT
+    return packed
+
+
+def convert(path):
+    raw = path.read_bytes()
+    model = json.loads(raw)
+    validate(model, path)
+    return pack(to_float32(model["weights"], path)), hashlib.sha256(raw).hexdigest()
 
 
 def main():
@@ -73,10 +98,10 @@ def main():
     lines = ["// Generated by scripts/convert_a2.py; do not redistribute model weights.",
              "#pragma once", "namespace embedded_a2 {"]
     try:
-        for index, name in enumerate(FILES):
+        for array, name in MODELS.items():
             weights, digest = convert(args.models / name)
             lines += [f"// {name}; SHA-256 {digest}",
-                      f"inline constexpr float kWeights{index}[] = {{"]
+                      f"inline constexpr float {array}[] = {{"]
             lines += ["  " + ", ".join(x.hex() + "f" for x in weights[i:i + 4]) + ","
                       for i in range(0, len(weights), 4)]
             lines += ["};"]
