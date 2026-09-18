@@ -56,7 +56,7 @@ The firmware prints one status line per second:
 --- NAM A2-Lite | 48-sample blocks @ 48 kHz | budget 1000 us/block | keys: 0=bypass 1=Twin65 2=AC30 3=JCM800 ---
 [active Fender Twin65          ]  avg  61% ( 612 us)  peak  63% ( 627 us)  headroom   373 us  blocks 1000  overruns 0
 >>> bypass
-[bypass -                      ]  avg   0% (   2 us)  peak   0% (   3 us)  headroom   997 us  blocks 1000  overruns 0
+[bypass -                      ]  avg  61% ( 618 us)  peak  62% ( 623 us)  headroom   377 us  blocks 1000  overruns 0
 ```
 
 | Field | Meaning |
@@ -69,6 +69,9 @@ The firmware prints one status line per second:
 | `overruns` | Callbacks that exceeded the budget in the last second. Lines with overruns are marked `<-- OVERRUN`. |
 
 The header repeats every 20 lines, and `>>>` lines record model switches.
+Bypass still runs the model so its state stays warm for A/B comparisons, so the
+load figures do not drop in bypass. All three models share one architecture and
+cost the same.
 
 ## Development
 
